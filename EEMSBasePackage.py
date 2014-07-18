@@ -48,7 +48,7 @@
 #
 # History
 #
-# EEMS is derived from work orginally done at Conservation Biology
+# EEMS is derived from work originally done at Conservation Biology
 # Institute to mimic the functionality of EMDS under ArcGIS without the 
 # need for 3rd party software. Jim Strittholt directed the initial
 # development with Tim Sheehan and Brendan Ward doing the programming.
@@ -91,6 +91,10 @@
 # 2014.02.14 - tjs
 #
 # Individual classes and utilities combined into single file.
+#
+# 2014.07.17 - mg
+#
+# Added three additional data normalization tools (MaxScore, ScoreRange, MeanToMid).
 #
 ######################################################################
 
@@ -250,6 +254,31 @@ class EEMSCmd:
                                    },
                 'Optional Params':{'OutFileName':'File Name'}
                 }
+
+        elif self.parsedCmd['cmd'] in ['MAXSCORE']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['SCORERANGE']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['MEANTOMID']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name', 'IgnoreZeros':'Integer'}
+            }
+
         else:
             raise Exception (
                 'Illegal Command: *%s*\n'%(self.parsedCmd['cmd'])+
@@ -1725,6 +1754,87 @@ class EEMSCmdRunnerBase:
 
     # def FuzzyXOr(...)
 
+    def MaxScore(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+    ):
+
+        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+        newData = self.EEMSFlds[inFieldName]['data'] / maxValue
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def MaxScore(...)
+
+    def ScoreRange(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+    ):
+
+        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        newData = (self.EEMSFlds[inFieldName]['data'] - minValue) / (maxValue - minValue)
+
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def ScoreRange(...)
+
+    def MeanToMid(
+            self,
+            inFieldName,
+            ignoreZeros,
+            outFileName,
+            rsltName
+    ):
+
+        #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
+        #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
+
+        lowValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        highValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        #If the ignoreZeros flag is enabled, create an array from the input data without 0's for computing the 3 means.
+        if ignoreZeros==1:
+            arrayToUse=np.delete(self.EEMSFlds[inFieldName]['data'],0)
+
+        #If the ignoreZeros flag is disabled, use the full range of input values for computing the 3 means.
+        else:
+            arrayToUse=self.EEMSFlds[inFieldName]['data']
+
+        meanValue=np.mean(arrayToUse)
+
+        belowMeanList=[]
+        aboveMeanList=[]
+
+        #Build a list of all values above the mean, and all values below the mean.
+        #These values will be used for calculating the highMeanValue and the lowMeanValue.
+        for value in arrayToUse:
+
+            if value > meanValue:
+                aboveMeanList.append(value)
+
+            else:
+                belowMeanList.append(value)
+
+        #Convert the lists created above to numpy arrays in order to easily calculate the means.
+        aboveMeanArray=np.asarray(aboveMeanList)
+        belowMeanArray=np.asarray(belowMeanList)
+
+        #Calculate the mean of all values above the mean.
+        highMeanValue=np.mean(aboveMeanArray)
+
+        #Calculate the mean of all values below the mean.
+        lowMeanValue=np.mean(belowMeanArray)
+
+        #Step 2: Call the CvtToFuzzyCurve method to perform the interpolation.
+        self.CvtToFuzzyCurve(inFieldName, [lowValue, lowMeanValue, meanValue, highMeanValue, highValue],[-1,-0.5,0,0.5,1],outFileName,rsltName)
+
+    # def MeanToMid(...)
+
     def Finish(self):
         # self._WriteFldsToFiles()
         pass
@@ -1796,6 +1906,7 @@ class EEMSInterpreter:
                 print '  '+self.myProg.GetCrntCmdString()
 
             cmdNm = self.myProg.GetCrntCmdName()
+
 
             cmdParams = {} # parameters that will be used in command
             
@@ -1995,7 +2106,29 @@ class EEMSInterpreter:
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
+            elif cmdNm == 'MAXSCORE':
+                self.myCmdRunner.MaxScore(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
+            elif cmdNm == 'SCORERANGE':
+                self.myCmdRunner.ScoreRange(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
+            elif cmdNm == 'MEANTOMID':
+                self.myCmdRunner.MeanToMid(
+                    cmdParams['InFieldName'],
+                    cmdParams['IgnoreZeros'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
             else:
                 raise Exception(
                     'ERROR: Unable to interpret command:\n'+
