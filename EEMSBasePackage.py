@@ -1,8 +1,8 @@
-######################################################################
 # EEMS Package
 ######################################################################
 # EEMS is the Environmental Evaluation Modeling System. EEMS provides
-# software framework to implement hierarchical (i.e. tree-based) fuzzy 
+# software framework to implement hierarchical (i.e. tree-based) fuzzy
+#####################################################################
 # logic-base decision support models.
 #
 # To use EEMS, a user writes a program in the EEMS language, which
@@ -21,7 +21,7 @@
 # class EEMSCmd
 #
 # This class parses an EEMS command, checks if for correctness, and
-# provides access to the command attributes and parameters. 
+# provides access to the command attributes and parameters.
 #
 # class EEMSProgram
 #
@@ -49,10 +49,10 @@
 # History
 #
 # EEMS is derived from work originally done at Conservation Biology
-# Institute to mimic the functionality of EMDS under ArcGIS without the 
+# Institute to mimic the functionality of EMDS under ArcGIS without the
 # need for 3rd party software. Jim Strittholt directed the initial
 # development with Tim Sheehan and Brendan Ward doing the programming.
-#
+##
 # Since the initial development, Tim Sheehan has taken on EEMS as lead
 # developer.
 #
@@ -95,6 +95,11 @@
 # 2014.07.17 - mg
 #
 # Added three additional data normalization tools (MaxScore, ScoreRange, MeanToMid).
+#
+# 2014.07.25 - mg
+#
+# Added two additional data normalization tools (Inverted, ScoreRangeCost).
+# ScoreRange renamed to ScoreRangeBenefit.
 #
 ######################################################################
 
@@ -1610,7 +1615,7 @@ class EEMSCmdRunnerBase:
 
     # def FuzzyWeightedUnion(...)
 
-    def FuzzyEMDSWeighteddAnd(
+    def FuzzyEMDSWeightedAnd(
         self,
         inFieldNames,
         weights,
