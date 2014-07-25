@@ -263,7 +263,23 @@ class EEMSCmd:
                 'Optional Params':{'OutFileName':'File Name'}
             }
 
-        elif self.parsedCmd['cmd'] in ['SCORERANGE']:
+        elif self.parsedCmd['cmd'] in ['INVERTED']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['SCORERANGEBENEFIT']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['SCORERANGECOST']:
             self.cmdDesc = {
                 'Name':self.parsedCmd['cmd'],
                 'Result':'Field Name',
@@ -1754,12 +1770,15 @@ class EEMSCmdRunnerBase:
 
     # def FuzzyXOr(...)
 
+    # Begin TWS Tools
+
+    # TWS 4.1
     def MaxScore(
             self,
             inFieldName,
             outFileName,
             rsltName
-    ):
+            ):
 
         maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
         newData = self.EEMSFlds[inFieldName]['data'] / maxValue
@@ -1767,12 +1786,27 @@ class EEMSCmdRunnerBase:
 
     # def MaxScore(...)
 
-    def ScoreRange(
+    # TWS 4.2c
+    def Inverted(
             self,
             inFieldName,
             outFileName,
             rsltName
-    ):
+            ):
+
+        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        newData = (minValue/self.EEMSFlds[inFieldName]['data'])
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def InvertedScore(...)
+
+    # TWS 4.3
+    def ScoreRangeBenefit(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+            ):
 
         minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
         maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
@@ -1783,13 +1817,31 @@ class EEMSCmdRunnerBase:
 
     # def ScoreRange(...)
 
+    # TWS 4.4
+    def ScoreRangeCost(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+            ):
+
+        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        newData = (maxValue - self.EEMSFlds[inFieldName]['data']) / (maxValue - minValue)
+
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def ScoreRange(...)
+
+    # TWS C&D
     def MeanToMid(
             self,
             inFieldName,
             ignoreZeros,
             outFileName,
             rsltName
-    ):
+            ):
 
         #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
         #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
@@ -2114,12 +2166,26 @@ class EEMSInterpreter:
                     self.myProg.GetCrntResultName()
                     )
 
-            elif cmdNm == 'SCORERANGE':
-                self.myCmdRunner.ScoreRange(
+            elif cmdNm == 'INVERTED':
+                self.myCmdRunner.Inverted(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                )
+
+            elif cmdNm == 'SCORERANGEBENEFIT':
+                self.myCmdRunner.ScoreRangeBenefit(
                     cmdParams['InFieldName'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
+
+            elif cmdNm == 'SCORERANGECOST':
+                self.myCmdRunner.ScoreRangeCost(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                )
 
             elif cmdNm == 'MEANTOMID':
                 self.myCmdRunner.MeanToMid(
