@@ -104,6 +104,7 @@
 # 2014.08.04 - mg
 #
 # Added the ability to specify fuzzy output values when using the MeanToMid tool.
+# Commented out the MaxScore (4.1) and Inverted (4.2c) tools.
 #
 ######################################################################
 
@@ -264,21 +265,21 @@ class EEMSCmd:
                 'Optional Params':{'OutFileName':'File Name'}
                 }
 
-        elif self.parsedCmd['cmd'] in ['MAXSCORE']:
-            self.cmdDesc = {
-                'Name':self.parsedCmd['cmd'],
-                'Result':'Field Name',
-                'Required Params':{'InFieldName':'Field Name'},
-                'Optional Params':{'OutFileName':'File Name'}
-            }
+        #elif self.parsedCmd['cmd'] in ['MAXSCORE']:
+        #    self.cmdDesc = {
+        #        'Name':self.parsedCmd['cmd'],
+        #        'Result':'Field Name',
+        #        'Required Params':{'InFieldName':'Field Name'},
+        #        'Optional Params':{'OutFileName':'File Name'}
+        #    }
 
-        elif self.parsedCmd['cmd'] in ['INVERTED']:
-            self.cmdDesc = {
-                'Name':self.parsedCmd['cmd'],
-                'Result':'Field Name',
-                'Required Params':{'InFieldName':'Field Name'},
-                'Optional Params':{'OutFileName':'File Name'}
-            }
+        #elif self.parsedCmd['cmd'] in ['INVERTED']:
+        #    self.cmdDesc = {
+        #        'Name':self.parsedCmd['cmd'],
+        #        'Result':'Field Name',
+        #        'Required Params':{'InFieldName':'Field Name'},
+        #        'Optional Params':{'OutFileName':'File Name'}
+        #    }
 
         elif self.parsedCmd['cmd'] in ['SCORERANGEBENEFIT']:
             self.cmdDesc = {
@@ -1782,30 +1783,30 @@ class EEMSCmdRunnerBase:
     # Begin TWS Tools
 
     # TWS 4.1
-    def MaxScore(
-            self,
-            inFieldName,
-            outFileName,
-            rsltName
-            ):
+    #def MaxScore(
+    #        self,
+    #        inFieldName,
+    #        outFileName,
+    #        rsltName
+    #        ):
 
-        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
-        newData = self.EEMSFlds[inFieldName]['data'] / maxValue
-        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+    #    maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+    #    newData = self.EEMSFlds[inFieldName]['data'] / maxValue
+    #    self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
     # def MaxScore(...)
 
     # TWS 4.2c
-    def Inverted(
-            self,
-            inFieldName,
-            outFileName,
-            rsltName
-            ):
+    #def Inverted(
+    #        self,
+    #        inFieldName,
+    #        outFileName,
+    #        rsltName
+    #        ):
 
-        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
-        newData = (minValue/self.EEMSFlds[inFieldName]['data'])
-        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+    #    minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+    #    newData = (minValue/self.EEMSFlds[inFieldName]['data'])
+    #    self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
     # def InvertedScore(...)
 
@@ -2174,19 +2175,19 @@ class EEMSInterpreter:
                     self.myProg.GetCrntResultName()
                     )
 
-            elif cmdNm == 'MAXSCORE':
-                self.myCmdRunner.MaxScore(
-                    cmdParams['InFieldName'],
-                    cmdParams['OutFileName'],
-                    self.myProg.GetCrntResultName()
-                    )
+            #elif cmdNm == 'MAXSCORE':
+            #    self.myCmdRunner.MaxScore(
+            #        cmdParams['InFieldName'],
+            #        cmdParams['OutFileName'],
+            #        self.myProg.GetCrntResultName()
+            #        )
 
-            elif cmdNm == 'INVERTED':
-                self.myCmdRunner.Inverted(
-                    cmdParams['InFieldName'],
-                    cmdParams['OutFileName'],
-                    self.myProg.GetCrntResultName()
-                )
+            #elif cmdNm == 'INVERTED':
+            #    self.myCmdRunner.Inverted(
+            #        cmdParams['InFieldName'],
+            #        cmdParams['OutFileName'],
+            #        self.myProg.GetCrntResultName()
+            #    )
 
             elif cmdNm == 'SCORERANGEBENEFIT':
                 self.myCmdRunner.ScoreRangeBenefit(
