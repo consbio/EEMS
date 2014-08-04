@@ -101,6 +101,10 @@
 # Added two additional data normalization tools (Inverted, ScoreRangeCost).
 # ScoreRange renamed to ScoreRangeBenefit.
 #
+# 2014.08.04 - mg
+#
+# Added the ability to specify fuzzy output values when using the MeanToMid tool.
+#
 ######################################################################
 
 import re
@@ -297,7 +301,7 @@ class EEMSCmd:
                 'Name':self.parsedCmd['cmd'],
                 'Result':'Field Name',
                 'Required Params':{'InFieldName':'Field Name'},
-                'Optional Params':{'OutFileName':'File Name', 'IgnoreZeros':'Integer'}
+                'Optional Params':{'OutFileName':'File Name', 'IgnoreZeros':'Integer', 'FuzzyValues':'Fuzzy Value List'}
             }
 
         else:
@@ -1844,9 +1848,15 @@ class EEMSCmdRunnerBase:
             self,
             inFieldName,
             ignoreZeros,
+            fuzzyValues,
             outFileName,
             rsltName
             ):
+
+        #Default FuzzyValues if none provided.
+        if fuzzyValues == 'NONE':
+            #fuzzyValues=[-1,-0.5,0,0.5,1]
+            fuzzyValues=[0,0.25,0.5,0.75,1.0]
 
         #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
         #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
@@ -1888,7 +1898,7 @@ class EEMSCmdRunnerBase:
         lowMeanValue=np.mean(belowMeanArray)
 
         #Step 2: Call the CvtToFuzzyCurve method to perform the interpolation.
-        self.CvtToFuzzyCurve(inFieldName, [lowValue, lowMeanValue, meanValue, highMeanValue, highValue],[-1,-0.5,0,0.5,1],outFileName,rsltName)
+        self.CvtToFuzzyCurve(inFieldName, [lowValue, lowMeanValue, meanValue, highMeanValue, highValue],fuzzyValues,outFileName,rsltName)
 
     # def MeanToMid(...)
 
@@ -2196,6 +2206,7 @@ class EEMSInterpreter:
                 self.myCmdRunner.MeanToMid(
                     cmdParams['InFieldName'],
                     cmdParams['IgnoreZeros'],
+                    cmdParams['FuzzyValues'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
