@@ -4,7 +4,7 @@
 import re
 import numpy as np
 from EEMSBasePackage import EEMSCmdRunnerBase
-from EEMSBasePackage import EEMSInterpreter
+#from EEMSBasePackage import EEMSInterpreter
 
 # Create the EEMSCmdRunner class, by overloading the
 # necessary methods from the EEMSCmdRunnerBase class.
@@ -116,15 +116,15 @@ class EEMSCmdRunner(EEMSCmdRunnerBase):
 # class EEMSCmdRunner(EEMSCmdRunnerBase):                                            
 ########################################################################
 
-########################################################################
-# Executable code starts here
-########################################################################
+# ########################################################################
+# # Executable code starts here
+# ########################################################################
 
-# Start here parsing args, create interpreter, and execute.
+# # Start here parsing args, create interpreter, and execute.
 
-myInterp = EEMSInterpreter('/Users/timsheehan/Projects/EEMS/Dev/TimTst.eem',EEMSCmdRunner())
-myInterp.PrintCRNotice()
-myInterp.PrintCmdTree()
-myInterp.RunProgram()
+# myInterp = EEMSInterpreter('/Users/timsheehan/Projects/EEMS/Dev/TimTst.eem',EEMSCmdRunner())
+# myInterp.PrintCRNotice()
+# myInterp.PrintCmdTree()
+# myInterp.RunProgram()
 
 
