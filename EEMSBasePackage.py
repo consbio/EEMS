@@ -1248,7 +1248,10 @@ class EEMSCmdRunnerBase:
         inFieldNames,
         outFileName
         ):
-        
+
+        ##### This method should be overridden by a method in the
+        ##### specific version of EEMS.
+
         pass
 
         # Confirm all inFieldNames in input file
@@ -1269,16 +1272,16 @@ class EEMSCmdRunnerBase:
         ):
 
         if falseThreshold == self.MinForFuzzyLimit:
-            falseThresh = self.MinOfFld(srcFld)
+            falseThresh = self.EEMSFlds[inFieldName]['data'].min()
         elif falseThreshold == self.MaxForFuzzyLimit:
-            falseThresh = self.MaxOfFld(srcFld)
+            falseThresh = self.EEMSFlds[inFieldName]['data'].max()
         else:
             falseThresh = falseThreshold
 
         if trueThreshold == self.MinForFuzzyLimit:
-            trueThresh = self.MinOfFld(srcFld)
+            trueThresh = self.EEMSFlds[inFieldName]['data'].min()
         elif trueThreshold == self.MaxForFuzzyLimit:
-            trueThresh = self.MaxOfFld(srcFld)
+            trueThresh = self.EEMSFlds[inFieldName]['data'].max()
         else:
             trueThresh = trueThreshold
 
@@ -1992,8 +1995,7 @@ class EEMSInterpreter:
             # Do overrides for required parameters
             for paramNm in self.myProg.GetParamNmsFromCrntCmd():
 
-                if (paramNm in self.paramOverrideVals.keys() and
-                    self.myProg.CrntHasParam(paramNm)):
+                if paramNm in self.paramOverrideVals.keys():
                     cmdParams[paramNm] = self.paramOverrideVals[paramNm]
                     if self.verbose:
                         print '    substituting %s into parameter %s'%(self.paramOverrideVals[paramNm],paramNm)
