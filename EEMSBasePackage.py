@@ -1,8 +1,8 @@
-######################################################################
 # EEMS Package
 ######################################################################
 # EEMS is the Environmental Evaluation Modeling System. EEMS provides
-# software framework to implement hierarchical (i.e. tree-based) fuzzy 
+# software framework to implement hierarchical (i.e. tree-based) fuzzy
+#####################################################################
 # logic-base decision support models.
 #
 # To use EEMS, a user writes a program in the EEMS language, which
@@ -21,7 +21,7 @@
 # class EEMSCmd
 #
 # This class parses an EEMS command, checks if for correctness, and
-# provides access to the command attributes and parameters. 
+# provides access to the command attributes and parameters.
 #
 # class EEMSProgram
 #
@@ -48,11 +48,11 @@
 #
 # History
 #
-# EEMS is derived from work orginally done at Conservation Biology
-# Institute to mimic the functionality of EMDS under ArcGIS without the 
+# EEMS is derived from work originally done at Conservation Biology
+# Institute to mimic the functionality of EMDS under ArcGIS without the
 # need for 3rd party software. Jim Strittholt directed the initial
 # development with Tim Sheehan and Brendan Ward doing the programming.
-#
+##
 # Since the initial development, Tim Sheehan has taken on EEMS as lead
 # developer.
 #
@@ -91,6 +91,20 @@
 # 2014.02.14 - tjs
 #
 # Individual classes and utilities combined into single file.
+#
+# 2014.07.17 - mg
+#
+# Added three additional data normalization tools (MaxScore, ScoreRange, MeanToMid).
+#
+# 2014.07.25 - mg
+#
+# Added two additional data normalization tools (Inverted, ScoreRangeCost).
+# ScoreRange renamed to ScoreRangeBenefit.
+#
+# 2014.08.04 - mg
+#
+# Added the ability to specify fuzzy output values when using the MeanToMid tool.
+# Commented out the MaxScore (4.1) and Inverted (4.2c) tools.
 #
 ######################################################################
 
@@ -250,6 +264,47 @@ class EEMSCmd:
                                    },
                 'Optional Params':{'OutFileName':'File Name'}
                 }
+
+        #elif self.parsedCmd['cmd'] in ['MAXSCORE']:
+        #    self.cmdDesc = {
+        #        'Name':self.parsedCmd['cmd'],
+        #        'Result':'Field Name',
+        #        'Required Params':{'InFieldName':'Field Name'},
+        #        'Optional Params':{'OutFileName':'File Name'}
+        #    }
+
+        #elif self.parsedCmd['cmd'] in ['INVERTED']:
+        #    self.cmdDesc = {
+        #        'Name':self.parsedCmd['cmd'],
+        #        'Result':'Field Name',
+        #        'Required Params':{'InFieldName':'Field Name'},
+        #        'Optional Params':{'OutFileName':'File Name'}
+        #    }
+
+        elif self.parsedCmd['cmd'] in ['SCORERANGEBENEFIT']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['SCORERANGECOST']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name'}
+            }
+
+        elif self.parsedCmd['cmd'] in ['MEANTOMID']:
+            self.cmdDesc = {
+                'Name':self.parsedCmd['cmd'],
+                'Result':'Field Name',
+                'Required Params':{'InFieldName':'Field Name'},
+                'Optional Params':{'OutFileName':'File Name', 'IgnoreZeros':'Integer', 'FuzzyValues':'Fuzzy Value List'}
+            }
+
         else:
             raise Exception (
                 'Illegal Command: *%s*\n'%(self.parsedCmd['cmd'])+
@@ -1568,7 +1623,7 @@ class EEMSCmdRunnerBase:
 
     # def FuzzyWeightedUnion(...)
 
-    def FuzzyEMDSWeighteddAnd(
+    def FuzzyEMDSWeightedAnd(
         self,
         inFieldNames,
         weights,
@@ -1728,6 +1783,129 @@ class EEMSCmdRunnerBase:
 
     # def FuzzyXOr(...)
 
+    # Begin TWS Tools
+
+    # TWS 4.1
+    #def MaxScore(
+    #        self,
+    #        inFieldName,
+    #        outFileName,
+    #        rsltName
+    #        ):
+
+    #    maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+    #    newData = self.EEMSFlds[inFieldName]['data'] / maxValue
+    #    self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def MaxScore(...)
+
+    # TWS 4.2c
+    #def Inverted(
+    #        self,
+    #        inFieldName,
+    #        outFileName,
+    #        rsltName
+    #        ):
+
+    #    minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+    #    newData = (minValue/self.EEMSFlds[inFieldName]['data'])
+    #    self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def InvertedScore(...)
+
+    # TWS 4.3
+    def ScoreRangeBenefit(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+            ):
+
+        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        newData = (self.EEMSFlds[inFieldName]['data'] - minValue) / (maxValue - minValue)
+
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def ScoreRange(...)
+
+    # TWS 4.4
+    def ScoreRangeCost(
+            self,
+            inFieldName,
+            outFileName,
+            rsltName
+            ):
+
+        minValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        maxValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        newData = (maxValue - self.EEMSFlds[inFieldName]['data']) / (maxValue - minValue)
+
+        self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
+
+    # def ScoreRange(...)
+
+    # TWS C&D
+    def MeanToMid(
+            self,
+            inFieldName,
+            ignoreZeros,
+            fuzzyValues,
+            outFileName,
+            rsltName
+            ):
+
+        #Default FuzzyValues if none provided.
+        if fuzzyValues == 'NONE':
+            #fuzzyValues=[-1,-0.5,0,0.5,1]
+            fuzzyValues=[0,0.25,0.5,0.75,1.0]
+
+        #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
+        #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
+
+        lowValue=np.amin(self.EEMSFlds[inFieldName]['data'])
+        highValue=np.amax(self.EEMSFlds[inFieldName]['data'])
+
+        #If the ignoreZeros flag is enabled, create an array from the input data without 0's for computing the 3 means.
+        if ignoreZeros==1:
+            arrayToUse=np.delete(self.EEMSFlds[inFieldName]['data'],0)
+
+        #If the ignoreZeros flag is disabled, use the full range of input values for computing the 3 means.
+        else:
+            arrayToUse=self.EEMSFlds[inFieldName]['data']
+
+        meanValue=np.mean(arrayToUse)
+
+        belowMeanList=[]
+        aboveMeanList=[]
+
+        #Build a list of all values above the mean, and all values below the mean.
+        #These values will be used for calculating the highMeanValue and the lowMeanValue.
+        for value in arrayToUse:
+
+            if value > meanValue:
+                aboveMeanList.append(value)
+
+            else:
+                belowMeanList.append(value)
+
+        #Convert the lists created above to numpy arrays in order to easily calculate the means.
+        aboveMeanArray=np.asarray(aboveMeanList)
+        belowMeanArray=np.asarray(belowMeanList)
+
+        #Calculate the mean of all values above the mean.
+        highMeanValue=np.mean(aboveMeanArray)
+
+        #Calculate the mean of all values below the mean.
+        lowMeanValue=np.mean(belowMeanArray)
+
+        #Step 2: Call the CvtToFuzzyCurve method to perform the interpolation.
+        self.CvtToFuzzyCurve(inFieldName, [lowValue, lowMeanValue, meanValue, highMeanValue, highValue],fuzzyValues,outFileName,rsltName)
+
+    # def MeanToMid(...)
+
     def Finish(self):
         # self._WriteFldsToFiles()
         pass
@@ -1799,6 +1977,7 @@ class EEMSInterpreter:
                 print '  '+self.myProg.GetCrntCmdString()
 
             cmdNm = self.myProg.GetCrntCmdName()
+
 
             cmdParams = {} # parameters that will be used in command
             
@@ -1997,7 +2176,44 @@ class EEMSInterpreter:
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
+            #elif cmdNm == 'MAXSCORE':
+            #    self.myCmdRunner.MaxScore(
+            #        cmdParams['InFieldName'],
+            #        cmdParams['OutFileName'],
+            #        self.myProg.GetCrntResultName()
+            #        )
+
+            #elif cmdNm == 'INVERTED':
+            #    self.myCmdRunner.Inverted(
+            #        cmdParams['InFieldName'],
+            #        cmdParams['OutFileName'],
+            #        self.myProg.GetCrntResultName()
+            #    )
+
+            elif cmdNm == 'SCORERANGEBENEFIT':
+                self.myCmdRunner.ScoreRangeBenefit(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
+            elif cmdNm == 'SCORERANGECOST':
+                self.myCmdRunner.ScoreRangeCost(
+                    cmdParams['InFieldName'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                )
+
+            elif cmdNm == 'MEANTOMID':
+                self.myCmdRunner.MeanToMid(
+                    cmdParams['InFieldName'],
+                    cmdParams['IgnoreZeros'],
+                    cmdParams['FuzzyValues'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
             else:
                 raise Exception(
                     'ERROR: Unable to interpret command:\n'+

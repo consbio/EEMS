@@ -122,9 +122,16 @@ class EEMSCmdRunner(EEMSCmdRunnerBase):
 
 # # Start here parsing args, create interpreter, and execute.
 
+<<<<<<< HEAD
 # myInterp = EEMSInterpreter('/Users/timsheehan/Projects/EEMS/Dev/TimTst.eem',EEMSCmdRunner())
 # myInterp.PrintCRNotice()
 # myInterp.PrintCmdTree()
 # myInterp.RunProgram()
+=======
+myInterp = EEMSInterpreter('MikeTst.eem',EEMSCmdRunner())
+myInterp.PrintCRNotice()
+myInterp.PrintCmdTree()
+myInterp.RunProgram()
+>>>>>>> TWS-2.0.1-Updates
 
 
