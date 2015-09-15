@@ -128,23 +128,35 @@ import numpy as np
 # 2012.02.14 - tjs
 #
 # Added EMDSAND and WTDEMDSAND. Testing Complete
+#
+# 2015.01.19 - tjs
+# 
+# Added 'NewFieldName' and 'NewFieldNames' optional parameters to
+# READ and READMULTI. This allows for renaming input fields. This
+# is useful if you are reading fields with the same name from
+# different files.
 ######################################################################
 
-class EEMSCmd:
+class EEMSCmd(object):
 
-    cmdStr = None
-    parsedCmd = None
-    cmdDesc = None # Command description for checking and error messages
+    def __init__(self,cmdStr,showHelpOnly=False):
 
-    def __init__(self,cmdStr):
         self.cmdStr = cmdStr
+        self.parsedCmd = None
+        self.cmdDesc = None # Command description for checking and error messages
         self.__ParseEEMSCmd()
         self.__ValidateCmd()
+            
     # def __init__(self,cmdStr):
+
+    def __enter__(self):
+        return self
+    # def __enter__(self):
 
     # init command description lookup
     def __InitCmdDesc(self):
         # Command descriptions for checking and error messages
+        # Every EEMS language command must be specified here.
 
         if self.parsedCmd['cmd'] in ['READ']:
             self.cmdDesc = {
@@ -152,7 +164,9 @@ class EEMSCmd:
                 'Required Params':{'InFileName':'File Name',
                                    'InFieldName':'Field Name'
                                    },
-                'Optional Params':{'OutFileName':'File Name'}
+                'Optional Params':{'OutFileName':'File Name',
+                                   'NewFieldName':'Field Name'
+                                   }
                 }
         elif self.parsedCmd['cmd'] in ['READMULTI']:
             self.cmdDesc = {
@@ -160,7 +174,9 @@ class EEMSCmd:
                 'Required Params':{'InFileName':'File Name',
                                    'InFieldNames':'Field Name List'
                                    },
-                'Optional Params':{'OutFileName':'File Name'}
+                'Optional Params':{'OutFileName':'File Name',
+                                   'NewFieldNames':'Field Name List'
+                                   }
                 }
         elif self.parsedCmd['cmd'] in ['CVTTOFUZZY']:
             self.cmdDesc = {
@@ -238,7 +254,6 @@ class EEMSCmd:
                 }
         elif self.parsedCmd['cmd'] in [
             'WTDUNION',
-            'WTDAND',
             'WTDMEAN',
             'WTDSUM',
             'WTDEMDSAND']:
@@ -266,7 +281,7 @@ class EEMSCmd:
 
     # Using regular expressions to test if a string comprises a valid variable using 
     def __IsStrValidFileName(self,inStr):
-        if re.match(r'([a-zA-Z]:[\\/]){0,1}[\w\\/\. ]*\w+\s*$',inStr):
+        if re.match(r'([a-zA-Z]:[\\/]){0,1}[\w\\/\.\- ]*\w+\s*$',inStr):
             return True
         else:
             return False
@@ -581,7 +596,7 @@ class EEMSCmd:
 
         # if self.parsedCmd['cmd'] in ['CVTTOFUZZYCURVE','CVTTOFUZZYCAT']:
 
-        if self.parsedCmd['cmd'] in ['WTDUNION','WTDAND','WTDMEAN','WTDSUM','WTDEMDSAND']:
+        if self.parsedCmd['cmd'] in ['WTDUNION','WTDMEAN','WTDSUM','WTDEMDSAND']:
             if (len(self.__ListFromListParam(self.parsedCmd['params']['InFieldNames'])) !=
                 len(self.__ListFromListParam(self.parsedCmd['params']['Weights']))):
                 raise Exception(
@@ -723,8 +738,17 @@ class EEMSCmd:
                 '  %s\n'%(self.cmdStr)+
                 '\n\nCommand Help:\n\n'+
                 self.GetCmdHelp())
-        
-# class EEMSCmd:
+
+    # def GetParam(self,paramNm):
+      
+    def __exit__(self,exc_type,exc_value,traceback):
+        if exc_type is not None:
+            print exc_type, exc_value, traceback
+            
+        return self
+    # def __exit__(self,exc_type,exc_value,traceback):
+
+# class EEMSCmd(object):
 ######################################################################
 
 ######################################################################
@@ -769,41 +793,111 @@ class EEMSCmd:
 # Updating as part of update of EEMS language and to use the EEMSCmd
 # class which provides an abstraction of EEMS commands and offloads
 # the parsing and error checking of a user's EEMS commands.
+#
+# 2015.01.16 - tjs
+#
+# Rewrote __init__ to allow for EEMS commands to spread over more
+# than one line and to give explanatory error messages on exception
+#
 ######################################################################
 
-class EEMSProgram:
-    unorderedCmds = [] # commands in no particular order
-    orderedCmds = [] # commands in order of execution
-    crntCmdNdx = None # The index of the current command in orderedCmds
-    allDefinedFieldNms = {} # unordered fields defined by by EEMS commands
+class EEMSProgram(object):
 
     def __init__(self, fNm):
-        inFile = open(fNm,'rU')
-        for line in inFile:
-            line = line.rstrip()
-            if not re.search('^#',line):
-                re.sub('#.*$','',line)
-                if not line == '':
-                    self.__AddCmd(line)
-        # for line in inFile:
+        # Parse the EEMS command file. Each command must start on a
+        # new line.
 
-        inFile.close()
+        self.unorderedCmds = [] # commands in no particular order
+        self.orderedCmds = [] # commands in order of execution
+        self.crntCmdNdx = None # The index of the current command in orderedCmds
+        self.allDefinedFieldNms = {} # unordered fields defined by by EEMS commands
+        
+        cmdLine = ''      # buffer to build command from lines of input file
+        inParens = False  # whether or not parsing is within parentheses
+        parenCnt = 0      # count of parenthesis levels
+        inLineCnt = 0     # line number of input file for error messages.
+
+        with open(fNm,'rU') as inFile:
+            for inLine in inFile:
+                inLineCnt +=1
+                if cmdLine == '':
+                    cmdStartLine = inLine
+                    cmdStartLineNum = inLineCnt
+                tmpLine = re.sub('#.*$','',inLine)
+                tmpLine = tmpLine.strip()
+
+                for charNdx in range(len(tmpLine)):
+                    cmdLine += tmpLine[charNdx]
+                    if tmpLine[charNdx] == '(':
+                        inParens = True
+                        parenCnt += 1
+                    elif tmpLine[charNdx] == ')':
+                        parenCnt -= 1
+
+                    if parenCnt < 0:
+                        raise Exception(
+                            '\n********************ERROR********************\n'+
+                            'Unmatched right paren *)*\n'+
+                            '  file: {}, line {}:\n'.format(fNm,inLineCnt)+
+                            '  {}\n'.format(inLine)
+                            )
+                    elif inParens and parenCnt == 0:
+                        if charNdx < (len(tmpLine)-1):
+                            raise Exception(
+                                '\n********************ERROR********************\n'+
+                                'Extraneous characters beyond end of command\n' +
+                                '  file: {}, line {}:\n'.format(fNm,inLineCnt) +
+                                '  {}\n'.format(inLine)
+                            )
+                        else:
+                            self.__AddCmd(cmdLine)
+                            cmdLine = ''
+                            inParens = False
+                            parenCnt = 0
+
+                        # if charNdx < (len(tmpLine)-1):
+                    # if parenCnt < 0:...elif...
+                # for charNdx in range(len(tmpLine)):
+            # for inLine in inFile:
+        # with open(fNm,'rU') as inFile:
+
+        # EEMS command file has been parsed.
+
+        if parenCnt > 0:
+            # Raise exception if there was an unmatched left paren
+            raise Exception(
+                '\n********************ERROR********************\n'+
+                'Unmatched {} left parens *(*\n'.format(parenCnt) +
+                '  file: {}, command starting on line {}:\n'.format(fNm,cmdStartLineNum) +
+                '  {}\n'.format(cmdStartLine)
+                )
 
         if len(self.unorderedCmds) == 0:
+            # Raise exception if EEMS command file had no commands.
             raise Exception(
                 '\n********************ERROR********************\n'+
                 'EEMS command file has no commands.\n'+
-                'FileName is:'+
-                '  %s\n'%fNm)
+                '  file: {}\n'.format(fNm)
+                )
 
         self.__OrderCmds()
     # def GetNodesFromFile(self, fNm):
 
+    def __enter__(self):
+        return self
+    # def __enter__(self):
+
     def __GetReadFieldNms(self,cmd):
         if cmd.GetCommandName() in ['READ']:
-             return [cmd.GetParam('InFieldName')]
+            if cmd.HasParam('NewFieldName'):
+                return [cmd.GetParam('NewFieldName')]
+            else:
+                return [cmd.GetParam('InFieldName')]
         elif cmd.GetCommandName() in ['READMULTI']:
-             return cmd.GetParam('InFieldNames')
+            if cmd.HasParam('NewFieldNames'):
+                return cmd.GetParam('NewFieldNames')
+            else:
+                return cmd.GetParam('InFieldNames')
         else:
             raise Exception(
                 'Programming Error, __GetReadFieldNms() for READ type EEMSCmds only.\n'+
@@ -835,7 +929,6 @@ class EEMSProgram:
         cmd = EEMSCmd(cmdStr)
 
         if cmd.HasResultName():
-
             rsltNm = cmd.GetResultName()
             if rsltNm in self.allDefinedFieldNms.keys():
                 raise Exception(
@@ -1058,7 +1151,14 @@ class EEMSProgram:
 
     # def GetCmdTreeAsString(self);
 
-# class EEMSProgram:
+    def __exit__(self,exc_type,exc_value,traceback):
+        if exc_type is not None:
+            print exc_type, exc_value, traceback
+            
+        return self
+    # def __exit__(self,exc_type,exc_value,traceback):
+
+# class EEMSProgram(object):
 ######################################################################
 
 
@@ -1089,7 +1189,7 @@ class EEMSProgram:
 # Tested on CSV version of EEMS
 ######################################################################
 
-class EEMSCmdRunnerBase:
+class EEMSCmdRunnerBase(object):
 
 ########################################################################
 # for control, etc
@@ -1097,9 +1197,15 @@ class EEMSCmdRunnerBase:
     MaxForFuzzyLimit = 9999
 ########################################################################
 
-    EEMSFlds = {}
-    outFileDict = {}
-    arrayShape = None
+    def __init__(self):
+        self.EEMSFlds = {}
+        self.outFileDict = {}
+        self.arrayShape = None
+    # def __init__(self):
+
+    def __enter__(self):
+        return self
+    # def __enter__(self):
 
     def _WriteFldsToFiles(self):
         pass
@@ -1122,6 +1228,7 @@ class EEMSCmdRunnerBase:
     # def _CreateOutFileMap(self):
 
     def _AddFieldToEEMSFlds(self,outFNm,fldNm,fldArray):
+
         if fldNm in self.EEMSFlds.keys():
             raise Exception(
                 '\n********************ERROR********************\n'+
@@ -1136,6 +1243,9 @@ class EEMSCmdRunnerBase:
                     'Data Shape mismatch:\n'+
                     '  Field *%s* has shape %s, does not match %s.\n'%
                     (fldNm,fldArray.shape,self.arrayShape))
+
+        if not isinstance(fldArray,np.ma.masked_array):
+            fldArray = np.ma.masked_array(fldArray,mask=False)
             
         self.EEMSFlds[fldNm] = {'outFNm':outFNm,'data':fldArray}
     # def _AddFieldToEEMSFlds(self,outFNm,fldNm,fldArray):
@@ -1182,9 +1292,13 @@ class EEMSCmdRunnerBase:
         self,
         inFileName,
         inFieldName,
-        outFileName
+        outFileName,
+        newFieldName
         ):
-        self.ReadMulti(inFileName,[inFieldName],outFileName)
+        if newFieldName is not 'NONE':
+            newFieldName = [newFieldName]
+
+        self.ReadMulti(inFileName,[inFieldName],outFileName,newFieldName)
     # def Read(
 
     def ReadMulti(
@@ -1251,8 +1365,8 @@ class EEMSCmdRunnerBase:
         newData = self.EEMSFlds[inFieldName]['data'] * m + b
 
         # take care of values outside of thresholds
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1271,18 +1385,24 @@ class EEMSCmdRunnerBase:
         # beyond x vals gets boundary y val
         # assumes sorted Raw and Fuzzy values
 
+        newData = np.ma.where(
+            self.EEMSFlds[inFieldName]['data'] != self.EEMSFlds[inFieldName]['data'],
+            float('nan'),
+            -9999
+            )
+
         # values lower than lowest raw value
-        newData = np.where(self.EEMSFlds[inFieldName]['data'] <= rawValues[0], fuzzyValues[0], -9999)
+        newData = np.ma.where(self.EEMSFlds[inFieldName]['data'] <= rawValues[0], fuzzyValues[0], newData)
 
         for ndx in range(1,len(rawValues)):
 
             m = (fuzzyValues[ndx] - fuzzyValues[ndx-1]) / (rawValues[ndx] - rawValues[ndx-1])
             b = fuzzyValues[ndx-1] -m * rawValues[ndx-1] 
             
-            newData = np.where(
+            newData = np.ma.where(
                 self.EEMSFlds[inFieldName]['data'] <= rawValues[ndx-1],
                 newData,
-                np.where(
+                np.ma.where(
                     self.EEMSFlds[inFieldName]['data'] <= rawValues[ndx],
                     self.EEMSFlds[inFieldName]['data'] * m + b,
                     newData
@@ -1292,11 +1412,11 @@ class EEMSCmdRunnerBase:
         # for ndx in range(1,len(rawValues)):
 
         # values greater than greatest raw value
-        newData = np.where(self.EEMSFlds[inFieldName]['data'] > rawValues[-1], fuzzyValues[-1], newData)
+        newData = np.ma.where(self.EEMSFlds[inFieldName]['data'] > rawValues[-1], fuzzyValues[-1], newData)
         
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1312,11 +1432,15 @@ class EEMSCmdRunnerBase:
         rsltName
         ):
 
-        newData = np.zeros(self.EEMSFlds[inFieldName]['data'].shape)
-        newData[:] = defaultFuzzyValue
+        newData = np.ma.zeros(self.EEMSFlds[inFieldName]['data'].shape)
+        newData[:] = np.ma.where(
+            self.EEMSFlds[inFieldName]['data'] != self.EEMSFlds[inFieldName]['data'], # nan check
+            float('nan'),
+            defaultFuzzyValue
+            )
 
         for ndx in range(len(rawValues)):
-            newData = np.where(
+            newData = np.ma.where(
                 self.EEMSFlds[inFieldName]['data'] == rawValues[ndx], 
                 fuzzyValues[ndx],
                 newData)
@@ -1360,7 +1484,7 @@ class EEMSCmdRunnerBase:
         
         newData = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         for ndx in range(1,len(inFieldNames)):
-            newData = np.minimum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            newData = np.ma.minimum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1375,7 +1499,7 @@ class EEMSCmdRunnerBase:
 
         newData = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         for ndx in range(1,len(inFieldNames)):
-            newData = np.maximum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            newData = np.ma.maximum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1388,7 +1512,7 @@ class EEMSCmdRunnerBase:
         rsltName
         ):
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
         for inFldNm in inFieldNames:
             newData += self.EEMSFlds[inFldNm]['data']
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
@@ -1402,7 +1526,7 @@ class EEMSCmdRunnerBase:
         rsltName
         ):
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
         for inFldNm in inFieldNames:
             newData += self.EEMSFlds[inFldNm]['data']
         newData /= len(inFieldNames)
@@ -1423,8 +1547,8 @@ class EEMSCmdRunnerBase:
         newData = -1.0*(self.EEMSFlds[inFieldName]['data'].copy())
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1440,14 +1564,14 @@ class EEMSCmdRunnerBase:
         for inFldNm in inFieldNames:
             self._VerifyFuzzyField(inFldNm)
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
         for inFldNm in inFieldNames:
             newData += self.EEMSFlds[inFldNm]['data']
         newData /= float(len(inFieldNames))
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1465,11 +1589,11 @@ class EEMSCmdRunnerBase:
 
         newData = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         for ndx in range(1,len(inFieldNames)):
-            newData = np.maximum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            newData = np.ma.maximum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1487,11 +1611,11 @@ class EEMSCmdRunnerBase:
 
         newData = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         for ndx in range(1,len(inFieldNames)):
-            newData = np.minimum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            newData = np.ma.minimum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1511,7 +1635,7 @@ class EEMSCmdRunnerBase:
         meanVals = self.EEMSFlds[inFieldNames[0]]['data'].copy()
  
         for ndx in range(1,len(inFieldNames)):
-            minVals = np.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            minVals = np.ma.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
             meanVals += self.EEMSFlds[inFieldNames[ndx]]['data']
 
         meanVals /= len(inFieldNames)
@@ -1519,8 +1643,8 @@ class EEMSCmdRunnerBase:
         newData = minVals + (meanVals - minVals) * (minVals + 1) / 2
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1554,15 +1678,15 @@ class EEMSCmdRunnerBase:
         for inFldNm in inFieldNames:
             self._VerifyFuzzyField(inFldNm)
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
 
         for ndx in range(len(inFieldNames)):
             newData += self.EEMSFlds[inFieldNames[ndx]]['data'] * weights[ndx]
         newData /= sum(weights)
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1583,7 +1707,7 @@ class EEMSCmdRunnerBase:
         meanVals = self.EEMSFlds[inFieldNames[0]]['data'].copy() * weights[0]
  
         for ndx in range(1,len(inFieldNames)):
-            minVals = np.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
+            minVals = np.ma.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
             meanVals += self.EEMSFlds[inFieldNames[ndx]]['data'] * weights[ndx]
 
         meanVals /= sum(weights)
@@ -1591,8 +1715,8 @@ class EEMSCmdRunnerBase:
         newData = minVals + (meanVals - minVals) * (minVals + 1) / 2
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1606,7 +1730,7 @@ class EEMSCmdRunnerBase:
         rsltName
         ):
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
 
         for ndx in range(len(inFieldNames)):
             newData += self.EEMSFlds[inFieldNames[ndx]]['data'] * weights[ndx]
@@ -1624,7 +1748,7 @@ class EEMSCmdRunnerBase:
         rsltName
         ):
 
-        newData = np.zeros(self.arrayShape)
+        newData = np.ma.zeros(self.arrayShape)
 
         for ndx in range(len(inFieldNames)):
             newData += self.EEMSFlds[inFieldNames[ndx]]['data'] * weights[ndx]
@@ -1652,7 +1776,7 @@ class EEMSCmdRunnerBase:
             
             # combine and sort data for inFieldNames
             exec \
-                'stackedArrs = np.concatenate(([self.EEMSFlds[\''+ \
+                'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ \
                 '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+ \
                 '\'][\'data\']]))'
 
@@ -1675,8 +1799,8 @@ class EEMSCmdRunnerBase:
             del(stackedArrs)
 
             # insure that rounding errors don't accumulate
-            newData = np.where(newData > 1.0, 1.0, newData)
-            newData = np.where(newData < -1.0, -1.0, newData)
+            newData = np.ma.where(newData > 1.0, 1.0, newData)
+            newData = np.ma.where(newData < -1.0, -1.0, newData)
 
             self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1706,11 +1830,11 @@ class EEMSCmdRunnerBase:
             self._VerifyFuzzyField(inFldNm)
 
         # combine and sort data for inFieldNames
-        exec 'stackedArrs = np.concatenate(([self.EEMSFlds[\''+ '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+'\'][\'data\']]))'
+        exec 'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+'\'][\'data\']]))'
 
         stackedArrs.sort(axis=0, kind='heapsort')
 
-        newData = np.where(
+        newData = np.ma.where(
             stackedArrs[-1] != -1,
             stackedArrs[-1] - \
                 (stackedArrs[-1] - stackedArrs[-2]) * \
@@ -1721,8 +1845,8 @@ class EEMSCmdRunnerBase:
         del(stackedArrs)
 
         # insure that rounding errors don't accumulate
-        newData = np.where(newData > 1.0, 1.0, newData)
-        newData = np.where(newData < -1.0, -1.0, newData)
+        newData = np.ma.where(newData > 1.0, 1.0, newData)
+        newData = np.ma.where(newData < -1.0, -1.0, newData)
 
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1732,7 +1856,14 @@ class EEMSCmdRunnerBase:
         # self._WriteFldsToFiles()
         pass
 
-# class EEMSCmdRunnerBase:
+    def __exit__(self,exc_type,exc_value,traceback):
+        if exc_type is not None:
+            print exc_type, exc_value, traceback
+            
+        return self
+    # def __exit__(self,exc_type,exc_value,traceback):
+
+# class EEMSCmdRunnerBase(object):
 ######################################################################
 
 ######################################################################
@@ -1762,23 +1893,25 @@ class EEMSCmdRunnerBase:
 #
 ######################################################################
 
-class EEMSInterpreter:
+class EEMSInterpreter(object):
 
-    myProg = None # EEMSProgram object
-    myCmdRunner = None # EEMSCmdRunner object
-    verbose = True
+    def __init__(self,EEMSProgFNm,cmdRunner,verbose=False):
+        self.myProg = None # EEMSProgram object
+        self.myCmdRunner = cmdRunner
+        self.verbose = verbose
 
-    # default values for optional params without values
-    dfltOptnlParamVals = {} 
+        # default values for optional params without values
+        self.dfltOptnlParamVals = {} 
 
-    # values to override required params. Be careful!
-    paramOverrideVals = {} 
+        # values to override required params. Be careful!
+        self.paramOverrideVals = {} 
 
-    def __init__(self,EEMSProgFNm,cmdRunner):
         self.myProg = EEMSProgram(EEMSProgFNm)
         self.myProg.SetCrntCmdToFirst() # start at beginning
-        # self.myCmdRunner = EEMSCmdRunner()
-        self.myCmdRunner = cmdRunner
+
+    def __enter__(self):
+        return self
+    # def __enter__(self):
 
     def SetVerbose(self,TorF):
         self.verbose = TorF
@@ -1828,6 +1961,7 @@ class EEMSInterpreter:
                     cmdParams['InFileName'],
                     cmdParams['InFieldName'],
                     cmdParams['OutFileName'],
+                    cmdParams['NewFieldName'],
                     )
 
             elif cmdNm == 'READMULTI':
@@ -1835,6 +1969,7 @@ class EEMSInterpreter:
                     cmdParams['InFileName'],
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
+                    cmdParams['NewFieldNames'],
                     )
 
             elif cmdNm == 'CVTTOFUZZY':
@@ -2032,7 +2167,14 @@ class EEMSInterpreter:
     def GetCRNotice(self):
         return EEMSUtils().GetCRNotice()
 
-# class EEMSInterpreter(EEMSCmdRunner):
+    def __exit__(self,exc_type,exc_value,traceback):
+        if exc_type is not None:
+            print exc_type, exc_value, traceback
+            
+        return self
+    # def __exit__(self,exc_type,exc_value,traceback):
+
+# class EEMSInterpreter(object):
 ######################################################################
 
 ######################################################################
@@ -2050,7 +2192,7 @@ class EEMSInterpreter:
 #
 ######################################################################
 
-class EEMSUtils:
+class EEMSUtils(object):
 
     EEMSCopyRightNotice =  \
     '######################################################################\n'+ \
@@ -2067,6 +2209,11 @@ class EEMSUtils:
     '#\n'+ \
     '# Real notice needs to be inserted here.\n'+ \
     '######################################################################\n'
+
+    def __enter__(self):
+        return self
+    # def __enter__(self):
+
 
 ######################################################################
 #  EEMSUtils.OptimizeEEMSReading(EEMSInFNm,EEMSOutFNm):
@@ -2149,3 +2296,12 @@ class EEMSUtils:
 
     def GetCRNotice(self):
         return self.EEMSCopyRightNotice
+
+    def __exit__(self,exc_type,exc_value,traceback):
+        if exc_type is not None:
+            print exc_type, exc_value, traceback
+            
+        return self
+    # def __exit__(self,exc_type,exc_value,traceback):
+
+# class EEMSUtils(object):

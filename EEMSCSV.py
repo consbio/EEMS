@@ -49,16 +49,26 @@ class EEMSCmdRunner(EEMSCmdRunnerBase):
 ########################################################################
 # Public methods
 ########################################################################
-
     def ReadMulti(
         self,
         inFileName,
         inFieldNames,
-        outFileName
+        outFileName,
+        newFieldNames # substitute names for inFieldNames
         ):
 
+        if newFieldNames is not 'NONE':
+            inOutNames = dict(zip(inFieldNames,newFieldNames))
+        else:
+            inOutNames = dict(zip(inFieldNames,inFieldNames))
+
         inFile = open(inFileName,'rU')
+
         line = inFile.readline()
+        # Skip comment lines
+        while re.match('^#',line):
+            line = inFile.readline()
+            
         line = line.rstrip('\r\f\n')
         line = re.sub('"','',line)
 
@@ -83,6 +93,9 @@ class EEMSCmdRunner(EEMSCmdRunnerBase):
         line = inFile.readline()
 
         while line != '':
+            # Skip comment lines
+            if re.match('^#',line):
+                continue
             line = line.rstrip('\r\f\n')
             line = re.sub('"','',line)
             inTokens = line.split(',')
@@ -102,8 +115,8 @@ class EEMSCmdRunner(EEMSCmdRunnerBase):
         # while line != '':
 
         # Add fields to EEMSFlds
-        for fldNm in tmpColData.keys():
-            self._AddFieldToEEMSFlds(outFileName,fldNm,np.array(tmpColData[fldNm]['data']))
+        for inFldNm,outFldNm in inOutNames.items():
+            self._AddFieldToEEMSFlds(outFileName,outFldNm,np.array(tmpColData[inFldNm]['data']))
                     
         inFile.close()
 
