@@ -994,7 +994,8 @@ class EEMSCmd(object):
 
         if paramType in ['File Name',
                          'Field Name',
-                         'Truest or Falsest']:
+                         'Truest or Falsest',
+                         'Import Name']:
             return paramVal
 
         elif paramType in ['Integer',
