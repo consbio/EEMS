@@ -470,7 +470,7 @@ class EEMSCmd(object):
                                    'FunctionName':'Function Name',
                                    'ResultType':'Field Type Description'
                                    },
-                'Optional Params':{},
+                'Optional Params':{'OutFileName':'File Name'},
                 'ReadableNm':'Call External Function',
                 'ShortDesc':'Calls an external function',
                 'RtrnType':'Any',
@@ -958,6 +958,8 @@ class EEMSCmd(object):
             return self.cmdDesc['Required Params'][paramNm]
         elif self.IsOptionalParam(paramNm):
             return self.cmdDesc['Optional Params'][paramNm]
+        elif self.GetCommandName() == 'CALLEXTERN':
+            return 'Unknown Type'
         else: # parameter not valid for this command
             raise Exception(
                 '\n********************ERROR********************\n'+
