@@ -998,7 +998,9 @@ class EEMSCmd(object):
                          'Field Name',
                          'Truest or Falsest',
                          'Import Name',
-                         'Function Name']:
+                         'Function Name',
+                         'Unknown Type'
+                         ]:
             return paramVal
 
         elif paramType in ['Integer',
@@ -1032,7 +1034,7 @@ class EEMSCmd(object):
         else: # Unkown parameter type
             raise Exception(
                 '\n********************ERROR********************\n'+
-                'Unkown parameter type *%s* for this command.\n*'%paramType+
+                'Unknown parameter type *%s* for this command.\n*'%paramType+
                 'Full command from which parameter was requested:\n'+
                 '  %s\n'%(self.cmdStr)+
                 '\n\nCommand Help:\n\n'+
