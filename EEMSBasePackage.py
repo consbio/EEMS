@@ -544,6 +544,14 @@ class EEMSCmd(object):
         else:
             return False
 
+    def __IsStrValidBoolean(self,inStr):
+        if (inStr in ['0','1','-1'] or 
+            re.match(r'^[Tt][Rr][Uu][Ee]$',inStr) or
+                re.match(r'^[Ff][Aa][Ll][Ss][Ee]$',inStr)):
+            return True
+        else:
+            return False
+
     def __IsStrValidFieldName(self,inStr):
         if re.match(r'^\w+$',inStr):
             return True
@@ -603,6 +611,8 @@ class EEMSCmd(object):
             rtrn = self.__IsStrValidFloat(inStr)
         elif type == 'Positive Float':
             rtrn = self.__IsStrValidFloat(inStr) and float(inStr) > 0
+        elif type == 'Boolean':
+            rtrn = self.__IsStrValidBoolean(inStr)
         elif type == 'Fuzzy Value':
             rtrn = self.__IsStrValidFloat(inStr) and float(inStr) >= -1.0 and float(inStr) <= 1.0
         elif type == 'Truest or Falsest':
@@ -627,6 +637,7 @@ class EEMSCmd(object):
             'Positive Integer List',
             'Float List',
             'Positive Float List',
+            'Boolean List',
             'Fuzzy Value List'
             ]:
 
@@ -1013,7 +1024,25 @@ class EEMSCmd(object):
             return float(paramVal)
 
         elif paramType in ['Boolean']:
-            return bool(paramVal)
+            
+            rtrn = None
+            if (paramVal == '1' or
+                re.match(r'^[Tt][Rr][Uu][Ee]$',paramVal)):
+                rtrn = True
+            elif (paramVal == '0' or
+                  paramVal == '-1' or
+                re.match(r'^[Ff][Aa][Ll][Ss][Ee]$',paramVal)):
+                rtrn = False
+            else:
+                raise Exception(
+                    '\n********************ERROR********************\n'+
+                    'Required parameter *%s* must be one of ["True","False","0","1"].\n*'%paramNm+
+                    'Full command in which parameter is incorrect:\n'+
+                    '  %s\n'%(self.cmdStr)+
+                    '\n\nCommand Help:\n\n'+
+                    self.GetCmdHelp())
+
+            return bool(rtrn)
 
         elif paramType in ['Field Type Description']:
             return str(paramVal)
