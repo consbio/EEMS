@@ -1297,7 +1297,6 @@ class EEMSCmdRunnerBase(object):
         ):
         if newFieldName is not 'NONE':
             newFieldName = [newFieldName]
-
         self.ReadMulti(inFileName,[inFieldName],outFileName,newFieldName)
     # def Read(
 
