@@ -912,6 +912,16 @@ class EEMSCmd(object):
                     '\n\nCommand Help:\n\n'+
                     self.GetCmdHelp())
     
+        if self.parsedCmd['cmd'] in ['MEANTOMID']:
+            if len(self.parsedCmd['params']['FuzzyValues'].split(',')) != 5:
+                raise Exception(
+                    '\n********************ERROR********************\n'+
+                    'Exactly 5 fuzzy values required.\n'+
+                    'Full erroneous command is:\n'+
+                    '  %s\n'%(self.cmdStr)+
+                    '\n\nCommand Help:\n\n'+
+                    self.GetCmdHelp())
+    
     # def __ValidateCmd(self):
          
 ############################################################
@@ -2234,11 +2244,6 @@ class EEMSCmdRunnerBase(object):
             outFileName,
             rsltName
             ):
-
-        #Default FuzzyValues if none provided.
-        if fuzzyValues == 'NONE':
-            #fuzzyValues=[-1,-0.5,0,0.5,1]
-            fuzzyValues=[0,0.25,0.5,0.75,1.0]
 
         #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
         #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
