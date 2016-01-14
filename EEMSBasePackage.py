@@ -1652,7 +1652,8 @@ class EEMSCmdRunnerBase(object):
         self,
         inFileName,
         inFieldNames,
-        outFileName
+        outFileName,
+        newFieldName
         ):
 
         ##### This method should be overridden by a method in the
@@ -2580,6 +2581,15 @@ class EEMSInterpreter(object):
                 
             elif cmdNm == 'CALLEXTERN':
                 self.myCmdRunner.CallExtern(
+                    self.myProg.GetCrntResultName()
+                    )
+
+            elif cmdNm == 'MEANTOMID':
+                self.myCmdRunner.MeanToMid(
+                    cmdParams['InFieldName'],
+                    cmdParams['IgnoreZeros'],
+                    cmdParams['FuzzyValues'],
+                    cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
 
