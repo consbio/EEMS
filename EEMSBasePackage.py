@@ -502,10 +502,11 @@ class EEMSCmd(object):
             self.cmdDesc = {
                 'Name':self.parsedCmd['cmd'],
                 'Result':'Field Name',
-                'Required Params':{'InFieldName':'Field Name'},
-                'Optional Params':{'OutFileName':'File Name', 
+                'Required Params':{'InFieldName':'Field Name',
                                    'IgnoreZeros':'Boolean', 
-                                   'FuzzyValues':'Fuzzy Value List'},
+                                   'FuzzyValues':'Fuzzy Value List'
+                                   },
+                'Optional Params':{'OutFileName':'File Name'},
                 'ReadableNm':'Mean To Mid',
                 'ShortDesc':'Converts input field to fuzzy field using mean to mid algorithm',
                 'RtrnType':'Fuzzy',
@@ -2442,7 +2443,16 @@ class EEMSInterpreter(object):
                     self.myProg.GetCrntResultName()
                     )
     
-            elif cmdNm == 'COPYFIELD':
+            elif cmdNm == 'MEANTOMID':
+                self.myCmdRunner.MeanToMid(
+                    cmdParams['InFieldName'],
+                    cmdParams['IgnoreZeros'],
+                    cmdParams['FuzzyValues'],
+                    cmdParams['OutFileName'],
+                    self.myProg.GetCrntResultName()
+                    )
+
+        elif cmdNm == 'COPYFIELD':
                 self.myCmdRunner.CopyField(
                     cmdParams['InFieldName'],
                     cmdParams['OutFileName'],
