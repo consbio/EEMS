@@ -1652,8 +1652,7 @@ class EEMSCmdRunnerBase(object):
         self,
         inFileName,
         inFieldNames,
-        outFileName,
-        newFieldName
+        outFileName
         ):
 
         ##### This method should be overridden by a method in the
@@ -2246,48 +2245,45 @@ class EEMSCmdRunnerBase(object):
             rsltName
             ):
 
-        #Step 1: Calculate the RawValues to pass in to the CvtToFuzzyCurve method.
-        #RawValues needed: lowValue, lowMeanValue, meanValue, highMeanValue, highValue.
-
-        lowValue=np.amin(self.EEMSFlds[inFieldName]['data'])
-        highValue=np.amax(self.EEMSFlds[inFieldName]['data'])
-
-        #If the ignoreZeros flag is enabled, create an array from the input data without 0's for computing the 3 means.
-#        if (ignoreZeros=='1' or re.match(r'^[Tt][Rr][Uu][Ee]$',ignoreZeros)):
+        # If the ignoreZeros flag is enabled, create an array from the input data without 0's
+        # for computing the 3 means.
+        
         if ignoreZeros:
-            arrayToUse=np.delete(self.EEMSFlds[inFieldName]['data'],0)
-        #If the ignoreZeros flag is disabled, use the full range of input values for computing the 3 means.
+            # This should give us a 1D array with zeros gone
+            valArr = self.EEMSFlds[inFieldName]['data'][self.EEMSFlds[inFieldName]['data'] != 0]
         else:
-            arrayToUse=self.EEMSFlds[inFieldName]['data']
+            valArr = cp.deepcopy(self.EEMSFlds[inFieldName]['data'].ravel())
 
-        meanValue=np.mean(arrayToUse)
+        # Note there is a bug with nd.ma.mean() that causes it to return a masked array
+        # if the mask is False, but a float if the mask is a list. Thus, we must
+        # test the result of the mean() operation and make it a float if it is not a
+        # float already.
+        
+        meanVal = valArr.mean()
+        if isinstance(meanVal,np.ndarray): meanVal = meanVal[0]
 
-        belowMeanList=[]
-        aboveMeanList=[]
-
-        #Build a list of all values above the mean, and all values below the mean.
-        #These values will be used for calculating the highMeanValue and the lowMeanValue.
-        for value in arrayToUse:
-
-            if value > meanValue:
-                aboveMeanList.append(value)
-
-            else:
-                belowMeanList.append(value)
-
-        #Convert the lists created above to numpy arrays in order to easily calculate the means.
-        aboveMeanArray=np.asarray(aboveMeanList)
-        belowMeanArray=np.asarray(belowMeanList)
-
-        #Calculate the mean of all values above the mean.
-        highMeanValue=np.mean(aboveMeanArray)
-
-        #Calculate the mean of all values below the mean.
-        lowMeanValue=np.mean(belowMeanArray)
-
-        #Step 2: Call the CvtToFuzzyCurve method to perform the interpolation.
-        self.CvtToFuzzyCurve(inFieldName, [lowValue, lowMeanValue, meanValue, highMeanValue, highValue],fuzzyValues,outFileName,rsltName)
-
+        # Endvals and means of bisected array
+        lowVal = valArr.min()
+        if isinstance(lowVal,np.ndarray): lowVal = lowVal[0]
+                
+        lowMeanVal = valArr[valArr < meanVal].mean()
+        if isinstance(lowMeanVal,np.ndarray): lowMeanVal = lowMeanVal[0]
+                
+        hiVal = valArr.max()
+        if isinstance(hiVal,np.ndarray): hiVal = hiVal[0]
+                
+        hiMeanVal = valArr[valArr > meanVal].mean()
+        if isinstance(hiMeanVal,np.ndarray): hiMeanVal = hiMeanVal[0]
+        
+        # Call the CvtToFuzzyCurve method to perform the interpolation.
+        self.CvtToFuzzyCurve(
+            inFieldName,
+            [lowVal, lowMeanVal, meanVal, hiMeanVal, hiVal],
+            fuzzyValues,
+            outFileName,
+            rsltName
+            )
+ 
     # def MeanToMid(...)
 
     def CallExtern(self):
@@ -2581,15 +2577,6 @@ class EEMSInterpreter(object):
                 
             elif cmdNm == 'CALLEXTERN':
                 self.myCmdRunner.CallExtern(
-                    self.myProg.GetCrntResultName()
-                    )
-
-            elif cmdNm == 'MEANTOMID':
-                self.myCmdRunner.MeanToMid(
-                    cmdParams['InFieldName'],
-                    cmdParams['IgnoreZeros'],
-                    cmdParams['FuzzyValues'],
-                    cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
 
