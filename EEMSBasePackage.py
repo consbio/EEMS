@@ -2452,7 +2452,7 @@ class EEMSInterpreter(object):
                     self.myProg.GetCrntResultName()
                     )
 
-        elif cmdNm == 'COPYFIELD':
+            elif cmdNm == 'COPYFIELD':
                 self.myCmdRunner.CopyField(
                     cmdParams['InFieldName'],
                     cmdParams['OutFileName'],
