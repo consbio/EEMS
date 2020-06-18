@@ -660,7 +660,7 @@ class EEMSCmd(object):
     def GetCmdHelp(self):
         outStr = '%s Command\n\n'%(self.cmdDesc['Name'])
         outStr += '  Usage:\n\n'
-        if 'Result' in self.cmdDesc.keys():
+        if 'Result' in list(self.cmdDesc.keys()):
             outStr += '    Result = %s(ParameterName = ParameterValue,...)\n\n'%(self.cmdDesc['Name'])
             outStr += '  where:\n\n'
             outStr += '    Result is a %s\n\n'%(self.cmdDesc['Result'])
@@ -668,7 +668,7 @@ class EEMSCmd(object):
             outStr += '    %s(ParameterName = ParameterValue,...)\n\n'%(self.cmdDesc['Name'])
 
         outStr += '    Required Parameters:\n\n'
-        reqParams = self.cmdDesc['Required Params'].keys()
+        reqParams = list(self.cmdDesc['Required Params'].keys())
         if len(reqParams) == 0:
             outStr += '      None\n'
         else:
@@ -676,7 +676,7 @@ class EEMSCmd(object):
                 outStr += '      %s is a %s\n'%(paramNm,self.cmdDesc['Required Params'][paramNm])
 
         outStr += '\n    Optional Parameters:\n\n'
-        optParams = self.cmdDesc['Optional Params'].keys()
+        optParams = list(self.cmdDesc['Optional Params'].keys())
         if len(optParams) == 0:
             outStr += '      None\n'
         else:
@@ -784,8 +784,8 @@ class EEMSCmd(object):
     def __ValidateCmd(self):
 
         # Are the presence and format of Result valid?
-        if 'Result' not in self.cmdDesc.keys():
-            if 'rslt' in self.parsedCmd.keys():
+        if 'Result' not in list(self.cmdDesc.keys()):
+            if 'rslt' in list(self.parsedCmd.keys()):
 
                 raise Exception(
                     '\n********************ERROR********************\n'+
@@ -811,8 +811,8 @@ class EEMSCmd(object):
 
         # Are there any parameters that don't belong?
         if self.parsedCmd['cmd'] not in ['CALLEXTERN']:
-            for paramName in self.parsedCmd['params'].keys():
-                if paramName not in self.cmdDesc['Required Params'].keys()+self.cmdDesc['Optional Params'].keys():
+            for paramName in list(self.parsedCmd['params'].keys()):
+                if paramName not in list(self.cmdDesc['Required Params'].keys())+list(self.cmdDesc['Optional Params'].keys()):
                     raise Exception(
                         '\n********************ERROR********************\n'+
                         'Invalid parameter for this command: *%s*\n'%(paramName)+
@@ -823,7 +823,7 @@ class EEMSCmd(object):
 
         # Are all the required parameters present?
         for paramName in self.cmdDesc['Required Params']:
-            if paramName not in self.parsedCmd['params'].keys():
+            if paramName not in list(self.parsedCmd['params'].keys()):
                 raise Exception(
                     '\n********************ERROR********************\n'+
                     'Required parameter missing from command: *%s*:\n'%(paramName)+
@@ -833,11 +833,11 @@ class EEMSCmd(object):
                     self.GetCmdHelp())
 
         # Are all the parameter values legal?
-        for paramName in self.parsedCmd['params'].keys():
+        for paramName in list(self.parsedCmd['params'].keys()):
 
-            if paramName in self.cmdDesc['Required Params'].keys():
+            if paramName in list(self.cmdDesc['Required Params'].keys()):
                 paramType = self.cmdDesc['Required Params'][paramName]
-            elif paramName in self.cmdDesc['Optional Params'].keys():
+            elif paramName in list(self.cmdDesc['Optional Params'].keys()):
                 paramType = self.cmdDesc['Optional Params'][paramName]
             elif self.parsedCmd['cmd'] in ['CALLEXTERN']:
                 paramType = 'skip'
@@ -946,22 +946,22 @@ class EEMSCmd(object):
         return self.parsedCmd['cmd'] in ['READ','READMULTI']
 
     def HasParam(self,paramNm):
-        return paramNm in self.parsedCmd['params'].keys()
+        return paramNm in list(self.parsedCmd['params'].keys())
 
     def HasResultName(self):
-        return 'rslt' in self.parsedCmd.keys()
+        return 'rslt' in list(self.parsedCmd.keys())
 
     def IsRequiredParam(self,paramNm):
-        return paramNm in self.cmdDesc['Required Params'].keys()
+        return paramNm in list(self.cmdDesc['Required Params'].keys())
 
     def IsOptionalParam(self,paramNm):
-        return paramNm in self.cmdDesc['Optional Params'].keys()
+        return paramNm in list(self.cmdDesc['Optional Params'].keys())
 
     def GetOptionalParamNames(self):
-        return self.cmdDesc['Optional Params'].keys()
+        return list(self.cmdDesc['Optional Params'].keys())
 
     def GetRequiredParamNames(self):
-        return self.cmdDesc['Required Params'].keys()
+        return list(self.cmdDesc['Required Params'].keys())
 
     def GetRtrnType(self):
         return self.cmdDesc['RtrnType']
@@ -995,7 +995,7 @@ class EEMSCmd(object):
         return self.cmdStr
 
     def GetParamNames(self):
-        return self.parsedCmd['params'].keys()
+        return list(self.parsedCmd['params'].keys())
 
     # returns the parameter with the appropriate format (e.g. list of floats)
     def GetParam(self,paramNm):
@@ -1084,7 +1084,7 @@ class EEMSCmd(object):
       
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
+            print(exc_type, exc_value, traceback)
             
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
@@ -1158,7 +1158,7 @@ class EEMSProgram(object):
         parenCnt = 0      # count of parenthesis levels
         inLineCnt = 0     # line number of input file for error messages.
 
-        if isinstance(fNm, basestring):
+        if isinstance(fNm, str):
             fObj = open(fNm, 'rU')
         else:
             fObj = fNm
@@ -1276,7 +1276,7 @@ class EEMSProgram(object):
 
         if cmd.HasResultName():
             rsltNm = cmd.GetResultName()
-            if rsltNm in self.allDefinedFieldNms.keys():
+            if rsltNm in list(self.allDefinedFieldNms.keys()):
                 raise Exception(
                     '\n********************ERROR********************\n'+
                     'A field is defined by two different commands.\n'+
@@ -1289,7 +1289,7 @@ class EEMSProgram(object):
         elif cmd.IsReadCmd():
 
             for fldNm in self.__GetReadFieldNms(cmd):
-                if fldNm in self.allDefinedFieldNms.keys():
+                if fldNm in list(self.allDefinedFieldNms.keys()):
                     raise Exception(
                         '\n********************ERROR********************\n'+
                         'A field is defined more than once.\n'+
@@ -1317,7 +1317,7 @@ class EEMSProgram(object):
         # check for a missing dependency
         for cmd in self.unorderedCmds:
             for dependNm in self.__GetDependFieldNms(cmd):
-                if dependNm not in self.allDefinedFieldNms.keys():
+                if dependNm not in list(self.allDefinedFieldNms.keys()):
                     raise Exception(
                         '\n********************ERROR********************\n'+
                         'Command depends on undefined field *%s*\n'%dependNm+
@@ -1336,7 +1336,7 @@ class EEMSProgram(object):
             # Step backwards through cmdsToBeOrdered so that popping
             # elements does not interfere with indexing
 
-            ndxs = range(len(self.unorderedCmds))
+            ndxs = list(range(len(self.unorderedCmds)))
             ndxs.reverse()
 
             for ndx in ndxs:
@@ -1502,7 +1502,7 @@ class EEMSProgram(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
+            print(exc_type, exc_value, traceback)
             
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
@@ -1564,11 +1564,11 @@ class EEMSCmdRunnerBase(object):
         # Create a map of files and fields
         outFileMap = {}
 
-        outFldLst = self.EEMSFlds.keys()
+        outFldLst = list(self.EEMSFlds.keys())
         outFldLst.sort()
         for EEMSFldNm in outFldLst:
             crntOutFNm = self.EEMSFlds[EEMSFldNm]['outFNm']
-            if crntOutFNm in outFileMap.keys():
+            if crntOutFNm in list(outFileMap.keys()):
                 outFileMap[crntOutFNm].append(EEMSFldNm)
             else:
                 outFileMap[crntOutFNm] = [EEMSFldNm]
@@ -1577,7 +1577,7 @@ class EEMSCmdRunnerBase(object):
     # def _CreateOutFileMap(self):
 
     def _AddFieldToEEMSFlds(self,outFNm,fldNm,fldArray):
-        if fldNm in self.EEMSFlds.keys():
+        if fldNm in list(self.EEMSFlds.keys()):
             raise Exception(
                 '\n********************ERROR********************\n'+
                 'Duplicated field name: *s*\n'%fldNm)
@@ -2005,7 +2005,7 @@ class EEMSCmdRunnerBase(object):
         rsltName
         ):
     
-        print 'FuzzyOrNeg has been deprecated. Use FuzzyAnd instead'
+        print('FuzzyOrNeg has been deprecated. Use FuzzyAnd instead')
 
         self.FuzzyAnd(
             inFieldNames,
@@ -2123,20 +2123,19 @@ class EEMSCmdRunnerBase(object):
         else:
             
             # combine and sort data for inFieldNames
-            exec \
-                'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ \
+            exec('stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ \
                 '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+ \
-                '\'][\'data\']]))'
+                '\'][\'data\']]))')
 
             stackedArrs.sort(axis=0, kind='heapsort')
 
             # range to consider
             if re.match(r'^[Tt][Rr][Uu][Ee][Ss][Tt]$',truestOrFalsest):
                 # Truest pulls from the high end of the sorted array
-                myRange = range(len(inFieldNames)-numberToConsider,len(inFieldNames))
+                myRange = list(range(len(inFieldNames)-numberToConsider,len(inFieldNames)))
             elif re.match(r'^[Ff][Aa][Ll][Ss][Ee][Ss][Tt]$',truestOrFalsest):
                 # Falsest pulls from the low end of the array
-                myRange = range(numberToConsider)
+                myRange = list(range(numberToConsider))
             else:
                 raise Exception(
                     '\n********************ERROR********************\n'+
@@ -2178,7 +2177,7 @@ class EEMSCmdRunnerBase(object):
             self._VerifyFuzzyField(inFldNm)
 
         # combine and sort data for inFieldNames
-        exec 'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+'\'][\'data\']]))'
+        exec('stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+'\'][\'data\']]))')
 
         stackedArrs.sort(axis=0, kind='heapsort')
 
@@ -2301,7 +2300,7 @@ class EEMSCmdRunnerBase(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
+            print(exc_type, exc_value, traceback)
             
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
@@ -2367,12 +2366,12 @@ class EEMSInterpreter(object):
 
     def RunProgram(self):
         
-        if self.verbose: print 'Running Commands:'
+        if self.verbose: print('Running Commands:')
 
         while True: # work loop over all commands
             
             if self.verbose:
-                print '  '+self.myProg.GetCrntCmdString()
+                print('  '+self.myProg.GetCrntCmdString())
 
             cmdNm = self.myProg.GetCrntCmdName()
 
@@ -2382,20 +2381,20 @@ class EEMSInterpreter(object):
             for paramNm in self.myProg.GetOptionalParamNmsForCrntCmd():
                 if self.myProg.CrntHasParam(paramNm):
                     cmdParams[paramNm] = self.myProg.GetParamFromCrntCmd(paramNm)
-                elif paramNm in self.dfltOptnlParamVals.keys():
+                elif paramNm in list(self.dfltOptnlParamVals.keys()):
                     cmdParams[paramNm] = self.dfltOptnlParamVals[paramNm]
                     if self.verbose:
-                        print '    substituting %s into parameter %s'%(self.dfltOptnlParamVals[paramNm],paramNm)
+                        print('    substituting %s into parameter %s'%(self.dfltOptnlParamVals[paramNm],paramNm))
                 else:
                     cmdParams[paramNm] = 'NONE'
 
             # Do overrides for required parameters
             for paramNm in self.myProg.GetParamNmsFromCrntCmd():
 
-                if paramNm in self.paramOverrideVals.keys():
+                if paramNm in list(self.paramOverrideVals.keys()):
                     cmdParams[paramNm] = self.paramOverrideVals[paramNm]
                     if self.verbose:
-                        print '    substituting %s into parameter %s'%(self.paramOverrideVals[paramNm],paramNm)
+                        print('    substituting %s into parameter %s'%(self.paramOverrideVals[paramNm],paramNm))
                 else:
                     cmdParams[paramNm] = self.myProg.GetParamFromCrntCmd(paramNm)
 
@@ -2618,13 +2617,13 @@ class EEMSInterpreter(object):
         
         # while True
 
-        if self.verbose: print '  Finish()'
+        if self.verbose: print('  Finish()')
         self.myCmdRunner.Finish() # finish final tasks
 
     # def RunProgram(self):
     
     def PrintCmdTree(self):
-        print self.myProg.GetCmdTreeAsString()
+        print(self.myProg.GetCmdTreeAsString())
 
     def GetAllResultNames(self):
         return self.myProg.GetAllResultNames()
@@ -2640,7 +2639,7 @@ class EEMSInterpreter(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
+            print(exc_type, exc_value, traceback)
             
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
@@ -2729,7 +2728,7 @@ class EEMSUtils(object):
             else:
                 inFldNms = [re.search('InFieldName\s*=\s*(.*?)[,\)]',line).groups()[0]]
 
-            if inFNm in readLines.keys():
+            if inFNm in list(readLines.keys()):
                 if outFNm in readLines[inFNm]:
                     readLines[inFNm][outFNm] += inFldNms
                 else:
@@ -2743,8 +2742,8 @@ class EEMSUtils(object):
 
         outFile = open(EEMSOutFNm,'w')
 
-        for inFNm in readLines.keys():
-            for outFNm in readLines[inFNm].keys():
+        for inFNm in list(readLines.keys()):
+            for outFNm in list(readLines[inFNm].keys()):
                 if outFNm == 'NONE':
                     outFile.write('READMULTI(InFileName = %s,InFieldNames = [%s])\n'%
                                   (inFNm,','.join(readLines[inFNm][outFNm]))
@@ -2763,14 +2762,14 @@ class EEMSUtils(object):
     # def OptimizeEEMSReading(EEMSInFNm,EEMSOutFNm):
 
     def PrintCRNotice(self):
-        print self.EEMSCopyRightNotice
+        print(self.EEMSCopyRightNotice)
 
     def GetCRNotice(self):
         return self.EEMSCopyRightNotice
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
+            print(exc_type, exc_value, traceback)
             
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
