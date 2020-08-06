@@ -2,7 +2,7 @@
 # EEMS Package
 ######################################################################
 # EEMS is the Environmental Evaluation Modeling System. EEMS provides
-# software framework to implement hierarchical (i.e. tree-based) fuzzy 
+# software framework to implement hierarchical (i.e. tree-based) fuzzy
 # logic-base decision support models.
 #
 # To use EEMS, a user writes a program in the EEMS language, which
@@ -21,7 +21,7 @@
 # class EEMSCmd
 #
 # This class parses an EEMS command, checks if for correctness, and
-# provides access to the command attributes and parameters. 
+# provides access to the command attributes and parameters.
 #
 # class EEMSProgram
 #
@@ -49,7 +49,7 @@
 # History
 #
 # EEMS is derived from work orginally done at Conservation Biology
-# Institute to mimic the functionality of EMDS under ArcGIS without the 
+# Institute to mimic the functionality of EMDS under ArcGIS without the
 # need for 3rd party software. Jim Strittholt directed the initial
 # development with Tim Sheehan and Brendan Ward doing the programming.
 #
@@ -101,7 +101,7 @@ import numpy as np
 # class EEMSCmd
 ######################################################################
 #
-# This class encapsulates an EEMS command. Its constructor takes a 
+# This class encapsulates an EEMS command. Its constructor takes a
 # string and parses it into its parts, stored in the dictionary
 # parsedCmd. Exhaustive error checking is performed in the parsing
 #  process.
@@ -130,7 +130,7 @@ import numpy as np
 # Added EMDSAND and WTDEMDSAND. Testing Complete
 #
 # 2015.01.19 - tjs
-# 
+#
 # Added 'NewFieldName' and 'NewFieldNames' optional parameters to
 # READ and READMULTI. This allows for renaming input fields. This
 # is useful if you are reading fields with the same name from
@@ -146,7 +146,7 @@ class EEMSCmd(object):
         self.cmdDesc = None # Command description for checking and error messages
         self.__ParseEEMSCmd()
         self.__ValidateCmd()
-            
+
     # def __init__(self,cmdStr):
 
     def __enter__(self):
@@ -279,7 +279,7 @@ class EEMSCmd(object):
     def __TrimEndSpace(self,str):
         return re.sub(r'\s*$','',re.sub(r'^\s*','',str))
 
-    # Using regular expressions to test if a string comprises a valid variable using 
+    # Using regular expressions to test if a string comprises a valid variable using
     def __IsStrValidFileName(self,inStr):
         if re.match(r'([a-zA-Z]:[\\/]){0,1}[\w\\/\.\- ]*\w+\s*$',inStr):
             return True
@@ -369,7 +369,8 @@ class EEMSCmd(object):
         else:
             raise Exception(
                 '\n********************ERROR********************\n'+
-                'Illegal parameter type: '+type)
+                'Illegal parameter type: ' + type
+            )
         return rtrn
     # def __IsParamType(self,inStr,type):
 
@@ -450,7 +451,7 @@ class EEMSCmd(object):
                         '  %s\n'%(self.cmdStr)+
                         'Proper command format is:\n'+
                         '  Result = Command(Parameter1 = ParameterValue1,...)')
-                
+
             # if paramPair:...else:
 
         # while paramStr != '':
@@ -480,7 +481,7 @@ class EEMSCmd(object):
                     '  %s\n'%(self.cmdStr)+
                     'Proper command format is:\n'+
                     '  Result = Command(Parameter1 = ParameterValue1,...)')
-            
+
             # Adjustment to Truest or Falsest in SELECTEDUNION command.
             # previous valid values were 1 or -1, so these get corrected here
             if self.parsedCmd['cmd'] == 'SELECTEDUNION' and paramTokens[0] == 'TruestOrFalsest':
@@ -623,13 +624,13 @@ class EEMSCmd(object):
                     '  %s\n'%(self.cmdStr)+
                     '\n\nCommand Help:\n\n'+
                     self.GetCmdHelp())
-    
+
     # def __ValidateCmd(self):
-         
+
 ############################################################
 # Public methods
 ############################################################
-   
+
     def GetResultName(self):
         if self.HasResultName():
             return self.parsedCmd['rslt']
@@ -740,11 +741,11 @@ class EEMSCmd(object):
                 self.GetCmdHelp())
 
     # def GetParam(self,paramNm):
-      
+
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
-            
+            print(exc_type, exc_value, traceback)
+
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
 
@@ -811,7 +812,7 @@ class EEMSProgram(object):
         self.orderedCmds = [] # commands in order of execution
         self.crntCmdNdx = None # The index of the current command in orderedCmds
         self.allDefinedFieldNms = {} # unordered fields defined by by EEMS commands
-        
+
         cmdLine = ''      # buffer to build command from lines of input file
         inParens = False  # whether or not parsing is within parentheses
         parenCnt = 0      # count of parenthesis levels
@@ -924,7 +925,7 @@ class EEMSProgram(object):
                 '  Command string:\n'+
                 '    %s'%cmd.GetCommandString())
     # def __GetDependFieldNms(self,cmd):
- 
+
     def __AddCmd(self,cmdStr):
         cmd = EEMSCmd(cmdStr)
 
@@ -950,7 +951,7 @@ class EEMSProgram(object):
                         'Commands with repeated definitions:\n'+
                         '  %s\n'%cmdStr+
                         '  %s\n'%self.allDefinedFieldNms[fldNm].GetCommandString())
-                        
+
                 else:
                     self.allDefinedFieldNms[fldNm] = cmd
 
@@ -962,7 +963,7 @@ class EEMSProgram(object):
 
     def __OrderCmds(self):
 
-        # Orders the commands for execution. 
+        # Orders the commands for execution.
         # First checks for missing ResultNames in dependencies
         # Then orders nodes and while doing so, detects
         # circular logic in commands and commands whose dependent
@@ -1005,30 +1006,30 @@ class EEMSProgram(object):
                     continue
 
                 else:
-                
+
                     # check if all the fields the current field depends on are
                     # defined by commanes in the the orderedCmds list
-                    
+
                     cmdHasAllDepends = True
-                    
+
                     for dependFldNm in self.__GetDependFieldNms(cmd):
                             if dependFldNm not in dpndsInOrderedCmds:
                                 cmdHasAllDepends = False
                                 break
                     # for dependFldNm in self.__GetDependFieldNms(rsltFldNm):
                 # if rsltFldNm in ['READ']: # No dependency
-                    
+
                 if cmdHasAllDepends:
                     self.orderedCmds.append(cmd)
                     self.unorderedCmds.pop(ndx)
                     dpndsInOrderedCmds.append(cmd.GetResultName())
                 # if fldIsIndependent:
-                
+
             # for ndx in ndxs:
-            
+
             # if no independent fields were found, then there is
             # a dependency cycle in the structure of the commands
-            
+
             if startingCmdsToBeOrderedLen == len(self.unorderedCmds):
                 cmdStrings = ''
                 for cmd in self.unorderedCmds:
@@ -1041,7 +1042,7 @@ class EEMSProgram(object):
         # while len(nodesToBeOrdered) > 0:
         self.crntCmdNdx = 0
     # def __OrderCmds(self):
-        
+
     def __ParseDict(self,nodeFld,treeImage, lvl):
     # parses the dictionary into a dependency tree
 
@@ -1055,11 +1056,11 @@ class EEMSProgram(object):
         return treeImage
 
     # def __ParseDict(self,nodeFld,treeImage, lvl)
-    
+
 ############################################################
 # Public methods
 ############################################################
-   
+
     def NextCmd(self):
         self.crntCmdNdx += 1
         if self.crntCmdNdx >= len(self.orderedCmds):
@@ -1091,7 +1092,8 @@ class EEMSProgram(object):
     def GetAllResultNames(self):
         rtrnLst = []
         for cmd in self.cmds:
-            if cmd.HasResultName(): rtrnLst += cmd.GetResultName()
+            if cmd.HasResultName():
+                rtrnLst += cmd.GetResultName()
         return rtrnLst
 
     def GetCrntResultName(self):
@@ -1153,8 +1155,8 @@ class EEMSProgram(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
-            
+            print(exc_type, exc_value, traceback)
+
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
 
@@ -1233,7 +1235,7 @@ class EEMSCmdRunnerBase(object):
             raise Exception(
                 '\n********************ERROR********************\n'+
                 'Duplicated field name: *s*\n'%fldNm)
-        
+
         if self.arrayShape == None:
             self.arrayShape = fldArray.shape
         else:
@@ -1246,7 +1248,7 @@ class EEMSCmdRunnerBase(object):
 
         if not isinstance(fldArray,np.ma.masked_array):
             fldArray = np.ma.masked_array(fldArray,mask=False)
-            
+
         self.EEMSFlds[fldNm] = {'outFNm':outFNm,'data':fldArray}
     # def _AddFieldToEEMSFlds(self,outFNm,fldNm,fldArray):
 
@@ -1295,7 +1297,7 @@ class EEMSCmdRunnerBase(object):
         outFileName,
         newFieldName
         ):
-        if newFieldName is not 'NONE':
+        if newFieldName != 'NONE':
             newFieldName = [newFieldName]
         self.ReadMulti(inFileName,[inFieldName],outFileName,newFieldName)
     # def Read(
@@ -1313,13 +1315,13 @@ class EEMSCmdRunnerBase(object):
         pass
 
         # Confirm all inFieldNames in input file
-            
+
         # determine inFieldNames col ndxs in input file
 
         # Add fields to EEMSFlds
 
     # def ReadMulti(...)
-                                            
+
     def CvtToFuzzy(
         self,
         inFieldName,
@@ -1396,8 +1398,8 @@ class EEMSCmdRunnerBase(object):
         for ndx in range(1,len(rawValues)):
 
             m = (fuzzyValues[ndx] - fuzzyValues[ndx-1]) / (rawValues[ndx] - rawValues[ndx-1])
-            b = fuzzyValues[ndx-1] -m * rawValues[ndx-1] 
-            
+            b = fuzzyValues[ndx-1] -m * rawValues[ndx-1]
+
             newData = np.ma.where(
                 self.EEMSFlds[inFieldName]['data'] <= rawValues[ndx-1],
                 newData,
@@ -1412,7 +1414,7 @@ class EEMSCmdRunnerBase(object):
 
         # values greater than greatest raw value
         newData = np.ma.where(self.EEMSFlds[inFieldName]['data'] > rawValues[-1], fuzzyValues[-1], newData)
-        
+
         # insure that rounding errors don't accumulate
         newData = np.ma.where(newData > 1.0, 1.0, newData)
         newData = np.ma.where(newData < -1.0, -1.0, newData)
@@ -1440,7 +1442,7 @@ class EEMSCmdRunnerBase(object):
 
         for ndx in range(len(rawValues)):
             newData = np.ma.where(
-                self.EEMSFlds[inFieldName]['data'] == rawValues[ndx], 
+                self.EEMSFlds[inFieldName]['data'] == rawValues[ndx],
                 fuzzyValues[ndx],
                 newData)
 
@@ -1468,7 +1470,7 @@ class EEMSCmdRunnerBase(object):
         rsltName
         ):
 
-        newData = (self.EEMSFlds[startingFieldName]['data'].copy() - 
+        newData = (self.EEMSFlds[startingFieldName]['data'].copy() -
                    self.EEMSFlds[toSubtractFieldName]['data'].copy())
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
@@ -1480,7 +1482,7 @@ class EEMSCmdRunnerBase(object):
         outFileName,
         rsltName
         ):
-        
+
         newData = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         for ndx in range(1,len(inFieldNames)):
             newData = np.ma.minimum(newData,self.EEMSFlds[inFieldNames[ndx]]['data'])
@@ -1534,7 +1536,7 @@ class EEMSCmdRunnerBase(object):
     # def MeanFlds(...)
 
     # Fuzzy logic operators (unless otherwise noted EMDS based)
-    
+
     def FuzzyNot(
         self,
         inFieldName,
@@ -1619,7 +1621,7 @@ class EEMSCmdRunnerBase(object):
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
     # def FuzzyAnd(...)
-    
+
     def FuzzyEMDSAnd(
         self,
         inFieldNames,
@@ -1632,7 +1634,7 @@ class EEMSCmdRunnerBase(object):
 
         minVals = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         meanVals = self.EEMSFlds[inFieldNames[0]]['data'].copy()
- 
+
         for ndx in range(1,len(inFieldNames)):
             minVals = np.ma.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
             meanVals += self.EEMSFlds[inFieldNames[ndx]]['data']
@@ -1648,15 +1650,15 @@ class EEMSCmdRunnerBase(object):
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
     # def FuzzyEMDSAnd(...)
-    
+
     def FuzzyOrNeg(
         self,
         inFieldNames,
         outFileName,
         rsltName
         ):
-    
-        print 'FuzzyOrNeg has been deprecated. Use FuzzyAnd instead'
+
+        print('FuzzyOrNeg has been deprecated. Use FuzzyAnd instead')
 
         self.FuzzyAnd(
             inFieldNames,
@@ -1704,7 +1706,7 @@ class EEMSCmdRunnerBase(object):
 
         minVals = self.EEMSFlds[inFieldNames[0]]['data'].copy()
         meanVals = self.EEMSFlds[inFieldNames[0]]['data'].copy() * weights[0]
- 
+
         for ndx in range(1,len(inFieldNames)):
             minVals = np.ma.minimum(minVals,self.EEMSFlds[inFieldNames[ndx]]['data'])
             meanVals += self.EEMSFlds[inFieldNames[ndx]]['data'] * weights[ndx]
@@ -1720,7 +1722,7 @@ class EEMSCmdRunnerBase(object):
         self._AddFieldToEEMSFlds(outFileName,rsltName,newData)
 
     # def FuzzyEMDSWeightedAnd(...)
-    
+
     def WeightedMean(
         self,
         inFieldNames,
@@ -1772,12 +1774,13 @@ class EEMSCmdRunnerBase(object):
         if len(inFieldNames) == 1:
             self.CopyField(inFieldNames[0],outFileName,rsltName)
         else:
-            
+
             # combine and sort data for inFieldNames
-            exec \
-                'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ \
-                '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+ \
+            exec (
+                'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\'' +
+                '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames) +
                 '\'][\'data\']]))'
+            )
 
             stackedArrs.sort(axis=0, kind='heapsort')
 
@@ -1824,12 +1827,16 @@ class EEMSCmdRunnerBase(object):
         # Get the two truest...
         # compute the difference in their fuzzy values...
         # normalize the result over fuzzy space.
-        
+
         for inFldNm in inFieldNames:
             self._VerifyFuzzyField(inFldNm)
 
         # combine and sort data for inFieldNames
-        exec 'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\''+ '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames)+'\'][\'data\']]))'
+        exec(
+            'stackedArrs = np.ma.concatenate(([self.EEMSFlds[\'' +
+            '\'][\'data\']],[self.EEMSFlds[\''.join(inFieldNames) +
+            '\'][\'data\']]))'
+        )
 
         stackedArrs.sort(axis=0, kind='heapsort')
 
@@ -1857,8 +1864,8 @@ class EEMSCmdRunnerBase(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
-            
+            print(exc_type, exc_value, traceback)
+
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
 
@@ -1874,7 +1881,7 @@ class EEMSCmdRunnerBase(object):
 # generated EEMS program and an EEMSCmdRunner as arguments.
 #
 # With the passed-in user program file, it creates an EEMSProgram
-# object. It then pulls commands from the EEMSProgram object, and 
+# object. It then pulls commands from the EEMSProgram object, and
 # interprets them for execution in the EEMSCmdRunner.
 #
 # Note that there are some options for overriding parameters that
@@ -1900,10 +1907,10 @@ class EEMSInterpreter(object):
         self.verbose = verbose
 
         # default values for optional params without values
-        self.dfltOptnlParamVals = {} 
+        self.dfltOptnlParamVals = {}
 
         # values to override required params. Be careful!
-        self.paramOverrideVals = {} 
+        self.paramOverrideVals = {}
 
         self.myProg = EEMSProgram(EEMSProgFNm)
         self.myProg.SetCrntCmdToFirst() # start at beginning
@@ -1922,18 +1929,19 @@ class EEMSInterpreter(object):
             self.paramOverrideVals[paramNm] = paramVal
 
     def RunProgram(self):
-        
-        if self.verbose: print 'Running Commands:'
+
+        if self.verbose:
+            print('Running Commands:')
 
         while True: # work loop over all commands
-            
+
             if self.verbose:
-                print '  '+self.myProg.GetCrntCmdString()
+                print('  '+self.myProg.GetCrntCmdString())
 
             cmdNm = self.myProg.GetCrntCmdName()
 
             cmdParams = {} # parameters that will be used in command
-            
+
             # Set values for optional parameters
             for paramNm in self.myProg.GetOptionalParamNmsForCrntCmd():
                 if self.myProg.CrntHasParam(paramNm):
@@ -1941,7 +1949,7 @@ class EEMSInterpreter(object):
                 elif paramNm in self.dfltOptnlParamVals.keys():
                     cmdParams[paramNm] = self.dfltOptnlParamVals[paramNm]
                     if self.verbose:
-                        print '    substituting %s into parameter %s'%(self.dfltOptnlParamVals[paramNm],paramNm)
+                        print('    substituting %s into parameter %s'%(self.dfltOptnlParamVals[paramNm],paramNm))
                 else:
                     cmdParams[paramNm] = 'NONE'
 
@@ -1951,7 +1959,7 @@ class EEMSInterpreter(object):
                 if paramNm in self.paramOverrideVals.keys():
                     cmdParams[paramNm] = self.paramOverrideVals[paramNm]
                     if self.verbose:
-                        print '    substituting %s into parameter %s'%(self.paramOverrideVals[paramNm],paramNm)
+                        print('    substituting %s into parameter %s'%(self.paramOverrideVals[paramNm],paramNm))
                 else:
                     cmdParams[paramNm] = self.myProg.GetParamFromCrntCmd(paramNm)
 
@@ -1979,7 +1987,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-    
+
             elif cmdNm == 'CVTTOFUZZYCURVE':
                 self.myCmdRunner.CvtToFuzzyCurve(
                     cmdParams['InFieldName'],
@@ -1998,7 +2006,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-    
+
             elif cmdNm == 'COPYFIELD':
                 self.myCmdRunner.CopyField(
                     cmdParams['InFieldName'],
@@ -2019,28 +2027,28 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'AND':
                 self.myCmdRunner.FuzzyAnd(
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'EMDSAND':
                 self.myCmdRunner.FuzzyEMDSAnd(
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'ORNEG':
                 self.myCmdRunner.FuzzyOrNeg(
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'XOR':
                 self.myCmdRunner.FuzzyXOr(
                     cmdParams['InFieldNames'],
@@ -2054,21 +2062,21 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'MIN':
                 self.myCmdRunner.MinFlds(
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'MAX':
                 self.myCmdRunner.MaxFlds(
                     cmdParams['InFieldNames'],
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'MEAN':
                 self.myCmdRunner.MeanFlds(
                     cmdParams['InFieldNames'],
@@ -2082,7 +2090,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'DIF':
                 self.myCmdRunner.DifFlds(
                     cmdParams['StartingFieldName'],
@@ -2090,7 +2098,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'SELECTEDUNION':
                 self.myCmdRunner.FuzzySelectedUnion(
                     cmdParams['InFieldNames'],
@@ -2099,7 +2107,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'WTDUNION':
                 self.myCmdRunner.FuzzyWeightedUnion(
                     cmdParams['InFieldNames'],
@@ -2107,7 +2115,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'WTDEMDSAND':
                 self.myCmdRunner.FuzzyEMDSWeightedAnd(
                     cmdParams['InFieldNames'],
@@ -2115,7 +2123,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'WTDMEAN':
                 self.myCmdRunner.WeightedMean(
                     cmdParams['InFieldNames'],
@@ -2123,7 +2131,7 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             elif cmdNm == 'WTDSUM':
                 self.myCmdRunner.WeightedSum(
                     cmdParams['InFieldNames'],
@@ -2131,28 +2139,29 @@ class EEMSInterpreter(object):
                     cmdParams['OutFileName'],
                     self.myProg.GetCrntResultName()
                     )
-                
+
             else:
                 raise Exception(
                     'ERROR: Unable to interpret command:\n'+
                     '  %s'%self.myProg.GetCrntCmdString()
                     )
-            
+
             # if cmdNm == 'READ'...elif...else:
-            
+
             # exit work loop if there is not another command to process
             if not self.myProg.NextCmd():
                 break;
-        
+
         # while True
 
-        if self.verbose: print '  Finish()'
+        if self.verbose:
+            print('  Finish()')
         self.myCmdRunner.Finish() # finish final tasks
 
     # def RunProgram(self):
-    
+
     def PrintCmdTree(self):
-        print self.myProg.GetCmdTreeAsString()
+        print(self.myProg.GetCmdTreeAsString())
 
     def GetAllResultNames(self):
         return self.myProg.GetAllResultNames()
@@ -2168,8 +2177,8 @@ class EEMSInterpreter(object):
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
-            
+            print(exc_type, exc_value, traceback)
+
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
 
@@ -2285,21 +2294,21 @@ class EEMSUtils(object):
 
         for line in noReadLines:
             outFile.write('%s\n'%line)
-            
+
         outFile.close
 
     # def OptimizeEEMSReading(EEMSInFNm,EEMSOutFNm):
 
     def PrintCRNotice(self):
-        print self.EEMSCopyRightNotice
+        print(self.EEMSCopyRightNotice)
 
     def GetCRNotice(self):
         return self.EEMSCopyRightNotice
 
     def __exit__(self,exc_type,exc_value,traceback):
         if exc_type is not None:
-            print exc_type, exc_value, traceback
-            
+            print(exc_type, exc_value, traceback)
+
         return self
     # def __exit__(self,exc_type,exc_value,traceback):
 
