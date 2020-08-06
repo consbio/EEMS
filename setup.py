@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='EEMS',
-    version='2.0.3',
+    version='2.0.4',
     description='Environmental Evaluation Modeling System',
     url='https://github.com/consbio/EEMS',
     author='Tim Sheehan, M.S.',
